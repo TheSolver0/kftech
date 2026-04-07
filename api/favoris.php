@@ -4,7 +4,7 @@
 // POST ?action=toggle { produit_id }→ ajoute ou retire des favoris
 // GET  ?action=check&id=X           → vérifie si un produit est en favori
 session_start();
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/api.php';
 
 // Créer la table si elle n'existe pas
 $db = getDB();

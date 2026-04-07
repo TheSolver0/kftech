@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/api.php';
 
 // Message flash (ex: après déconnexion)
 $flash = null;
@@ -9,22 +9,9 @@ if (!empty($_SESSION['flash'])) {
     unset($_SESSION['flash']);
 }
 
-define('API_BASE', 'http://localhost:5273/api/'); // 👈 seule ligne à changer
-
-function apiGet(string $path): array {
-    $ctx = stream_context_create(['http' => [
-        'timeout'       => 5,
-        'ignore_errors' => true,
-    ]]);
-    $raw = @file_get_contents(API_BASE . $path, false, $ctx);
-    if ($raw === false) return [];
-    return json_decode($raw, true) ?? [];
-}
-
-$db = getDB();
-
-// ---- HERO SLIDES depuis la BD ----
-$heroSlides = $db->query("SELECT * FROM hero_slides WHERE actif = 1 ORDER BY ordre ASC")->fetchAll();
+// ---- HERO SLIDES depuis l'API ----
+$heroData = apiGet('/hero');
+$heroSlides = $heroData['slides'] ?? [];
 
 // ---- MEILLEURS PRODUITS (sidebar) ----
 $bestData  = apiGet('/products/meilleurs');

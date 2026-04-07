@@ -2,7 +2,7 @@
 // api/avis.php — proxy vers POST /api/ecom/reviews
 header('Content-Type: application/json; charset=utf-8');
 
-define('API_BASE', 'http://localhost:5273/api/');
+require_once __DIR__ . '/../config/api.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -29,7 +29,7 @@ $ctx = stream_context_create(['http' => [
     'ignore_errors' => true,
 ]]);
 
-$raw  = @file_get_contents(API_BASE . '/reviews', false, $ctx);
+$raw  = @file_get_contents(APIURL . 'reviews', false, $ctx);
 $data = $raw ? json_decode($raw, true) : null;
 
 if ($data && !isset($data['erreur'])) {

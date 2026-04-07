@@ -1,27 +1,18 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/api.php';
 
 // Si non connecté → rediriger vers login
-if (!isLoggedIn()) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php?redirect=favoris&msg=favoris');
     exit;
 }
 
-$user = getCurrentUser();
-$db   = getDB();
+$userId = $_SESSION['user_id'];
 
-// Récupérer les favoris
-$stmt = $db->prepare("
-    SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug
-    FROM favoris f
-    JOIN produits p ON f.produit_id = p.id
-    JOIN categories c ON p.categorie_id = c.id
-    WHERE f.utilisateur_id = ? AND p.actif = 1
-    ORDER BY f.created_at DESC
-");
-$stmt->execute([$user['id']]);
-$favoris = $stmt->fetchAll();
+// Récupérer les favoris depuis l'API
+$favData = apiGet('/favoris?user_id=' . $userId);
+$favoris = $favData['favoris'] ?? [];
 
 function starsHtml(float $n): string {
     $n = (int)round($n);

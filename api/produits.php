@@ -2,21 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-define('API_BASE', 'http://localhost:5273/api/'); 
-
-function apiGet(string $path): mixed {
-    $ctx = stream_context_create(['http' => [
-        'timeout'       => 5,
-        'ignore_errors' => true,
-    ]]);
-    $raw = @file_get_contents(API_BASE . $path, false, $ctx);
-    if ($raw === false) {
-        http_response_code(503);
-        echo json_encode(['erreur' => 'API indisponible']);
-        exit;
-    }
-    return json_decode($raw, true) ?? [];
-}
+require_once __DIR__ . '/../config/api.php';
 
 function jsonResponse(mixed $data, int $code = 200): void {
     http_response_code($code);

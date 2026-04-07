@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/api.php';
 
 // ---- PARAMÈTRES ----
 $catSlug = trim($_GET['cat']    ?? '');
@@ -11,21 +11,6 @@ $page    = max(1, (int)($_GET['page'] ?? 1));
 $pmin    = (int)($_GET['pmin']  ?? 0) ?: null;
 $pmax    = (int)($_GET['pmax']  ?? 0) ?: null;
 $limit   = 12;
-
-// ============================================================
-// HELPER API
-// ============================================================
-define('API_BASE', 'http://localhost:5273/api/');
-
-function apiGet(string $path): array {
-    $ctx = stream_context_create(['http' => [
-        'timeout'       => 5,
-        'ignore_errors' => true,
-    ]]);
-    $raw = @file_get_contents(API_BASE . $path, false, $ctx);
-    if ($raw === false) return [];
-    return json_decode($raw, true) ?? [];
-}
 
 // ============================================================
 // DONNÉES VIA L'API .NET

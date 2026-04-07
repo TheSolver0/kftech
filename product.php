@@ -1,25 +1,11 @@
 <?php
 session_start();
+require_once __DIR__ . '/config/api.php';
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) {
     header('Location: catalog.php');
     exit;
-}
-
-// ============================================================
-// HELPER API
-// ============================================================
-define('API_BASE', 'http://localhost:5273/api/');
-
-function apiGet(string $path): array {
-    $ctx = stream_context_create(['http' => [
-        'timeout'       => 5,
-        'ignore_errors' => true,
-    ]]);
-    $raw = @file_get_contents(API_BASE . $path, false, $ctx);
-    if ($raw === false) return [];
-    return json_decode($raw, true) ?? [];
 }
 
 // ============================================================

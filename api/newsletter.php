@@ -1,14 +1,10 @@
 <?php
 // =============================================
-// api/auth.php
-// POST ?action=connexion   { email, mot_de_passe }
-// POST ?action=inscription { prenom, nom, email, telephone, mot_de_passe }
-// GET  ?action=deconnexion
-// GET  ?action=session      → retourne l'utilisateur connecté
+// api/newsletter.php
 // =============================================
 
 session_start();
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/api.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
