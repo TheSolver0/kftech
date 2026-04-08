@@ -1,25 +1,29 @@
 <?php
-// =====================================================
-// config/api.php — Configuration API centralisée
-// SEULE CONSTANTE À MODIFIER POUR CHANGER L'URL DE L'API
-// =====================================================
 
-// 🔴 IMPORTANTE : URL de base de l'API - À MODIFIER SI NÉCESSAIRE
-define('APIURL', 'http://localhost:5273/api/');
+define('APIURL', "https://api.kftech237.com/api/ecom");
 
-/**
- * Appel GET à l'API
- * @param string $path Chemin relatif (ex: /products, /categories, etc)
- * @return array Les données JSON décódées ou array vide en cas d'erreur
- */
 function apiGet(string $path): array {
+    $url = APIURL . '/' . ltrim($path, '/');
     $ctx = stream_context_create(['http' => [
-        'timeout'       => 5,
+        'timeout'       => 10,
         'ignore_errors' => true,
+        'header'        => 'Accept: application/json',
     ]]);
-    $raw = @file_get_contents(APIURL . ltrim($path, '/'), false, $ctx);
-    if ($raw === false) return [];
-    return json_decode($raw, true) ?? [];
+    
+    $raw = @file_get_contents($url, false, $ctx);
+    
+    if ($raw === false) {
+        error_log("apiGet failed: $url");
+        return [];
+    }
+    
+    $decoded = json_decode($raw, true);
+    
+    // Si l'API retourne un objet avec une clé data/items/results
+    if (isset($decoded['data'])) return $decoded['data'];
+    if (isset($decoded['items'])) return $decoded['items'];
+    
+    return is_array($decoded) ? $decoded : [];
 }
 
 /**

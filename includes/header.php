@@ -7,7 +7,7 @@ if (!isset($pageDesc))  $pageDesc  = 'KF Tech, votre boutique informatique à Do
 require_once __DIR__ . '/../config/api.php';
 
 // Récupérer catégories depuis l'API
-$cats = apiGet('/categories');
+$cats = apiGet('Categories');
 if (!is_array($cats)) $cats = [];
 
 // Vérifier si utilisateur connecté (via session)

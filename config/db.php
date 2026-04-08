@@ -6,7 +6,7 @@
 // =====================================================
 
 // URL de base du site (change sur hébergement)
-define('BASE_URL', 'http://localhost/kftech');
+define('BASE_URL', "https://api.kftech237.com/api/");
 
 // Helper : vérifier si utilisateur connecté (via session)
 function isLoggedIn() {
