@@ -101,6 +101,14 @@ if (isset($_SESSION['user_id'])) {
     <div class="nav-left">
       <button class="nav-menu-btn"><i class="fas fa-bars"></i></button>
       <ul class="nav-links">
+          <!-- LIEN ACCUEIL POUR MOBILE -->
+        <li>
+          <a href="index.php">
+            <i class="fas fa-home"></i> Accueil
+          </a>
+        </li>
+        <li class="divider">|</li>
+        <!-- CATEGORIES -->
         <?php foreach ($cats as $i => $c): ?>
           <li>
             <a href="catalog.php?cat=<?= $c['slug'] ?>"

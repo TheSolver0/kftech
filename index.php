@@ -171,7 +171,7 @@ setTimeout(function() {
   </div>
 </section>
 
-<!-- FEATURES --->
+<!-- FEATURES -->
 <section class="features">
   <div class="container features-grid">
     <div class="feat"><i class="fas fa-truck"></i><div><h4>Livraison A Domicile</h4><p>Livraison chez vous</p></div></div>
@@ -465,12 +465,12 @@ document.querySelectorAll('.btab').forEach(function(btn){
 });
 
 // Hamburger
-(function(){
-  var btn=document.querySelector('.nav-menu-btn'), links=document.querySelector('.nav-links');
-  if (!btn||!links) return;
-  btn.addEventListener('click', function(){ var o=links.classList.toggle('open'); btn.innerHTML=o?'<i class="fas fa-times"></i>':'<i class="fas fa-bars"></i>'; });
-  document.addEventListener('click', function(e){ if(!btn.contains(e.target)&&!links.contains(e.target)){ links.classList.remove('open'); btn.innerHTML='<i class="fas fa-bars"></i>'; } });
-})();
+// (function(){
+//   var btn=document.querySelector('.nav-menu-btn'), links=document.querySelector('.nav-links');
+//   if (!btn||!links) return;
+//   btn.addEventListener('click', function(){ var o=links.classList.toggle('open'); btn.innerHTML=o?'<i class="fas fa-times"></i>':'<i class="fas fa-bars"></i>'; });
+//   document.addEventListener('click', function(e){ if(!btn.contains(e.target)&&!links.contains(e.target)){ links.classList.remove('open'); btn.innerHTML='<i class="fas fa-bars"></i>'; } });
+// })();
 
 // Voir Plus scroll
 var heroBtnVoir = document.getElementById('heroBtnVoir');
