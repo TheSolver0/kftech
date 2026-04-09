@@ -27,7 +27,7 @@ $smartData2 = apiGet('/products?cat=tablettes&limit=2');
 $smartProds = array_merge(
     $smartData1['produits'] ?? [],
     $smartData2['produits'] ?? []
-);
+); 
 
 // ---- CATEGORIES (sidebar) ----
 $allCats = apiGet('/categories');
@@ -171,7 +171,7 @@ setTimeout(function() {
   </div>
 </section>
 
-<!-- FEATURES -->
+<!-- FEATURES --->
 <section class="features">
   <div class="container features-grid">
     <div class="feat"><i class="fas fa-truck"></i><div><h4>Livraison A Domicile</h4><p>Livraison chez vous</p></div></div>
