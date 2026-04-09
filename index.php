@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/api.php';
+require_once __DIR__ . '/config/db.php';
 
 // Message flash (ex: après déconnexion)
 $flash = null;
@@ -9,28 +9,45 @@ if (!empty($_SESSION['flash'])) {
     unset($_SESSION['flash']);
 }
 
-// ---- HERO SLIDES depuis l'API ----
-$heroData = apiGet('/hero');
-$heroSlides = $heroData['slides'] ?? [];
+$db = getDB();
+
+// ---- HERO SLIDES depuis la BD ----
+$heroSlides = $db->query("SELECT * FROM hero_slides WHERE actif = 1 ORDER BY ordre ASC")->fetchAll();
 
 // ---- MEILLEURS PRODUITS (sidebar) ----
-$bestData  = apiGet('/products/meilleurs');
-$bestProds = $bestData['produits'] ?? [];
+$bestProds = $db->query("
+    SELECT p.*, c.slug AS cat_slug
+    FROM produits p JOIN categories c ON p.categorie_id = c.id
+    WHERE p.actif = 1
+    ORDER BY p.note DESC, p.nb_avis DESC
+    LIMIT 3
+")->fetchAll();
 
 // ---- PRODUITS TENDANCE ----
-$trendData  = apiGet('/products/tendance');
-$trendProds = $trendData['produits'] ?? [];
+$trendProds = $db->query("
+    SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug
+    FROM produits p JOIN categories c ON p.categorie_id = c.id
+    WHERE p.actif = 1
+    ORDER BY p.nb_avis DESC, p.note DESC
+    LIMIT 8
+")->fetchAll();
 
 // ---- SMARTPHONES / TABLETTES ----
-$smartData1 = apiGet('/products?cat=smartphones&limit=2');
-$smartData2 = apiGet('/products?cat=tablettes&limit=2');
-$smartProds = array_merge(
-    $smartData1['produits'] ?? [],
-    $smartData2['produits'] ?? []
-);
+$smartProds = $db->query("
+    SELECT p.*, c.slug AS cat_slug
+    FROM produits p JOIN categories c ON p.categorie_id = c.id
+    WHERE p.actif = 1 AND c.slug IN ('smartphones','tablettes')
+    ORDER BY p.note DESC
+    LIMIT 4
+")->fetchAll();
 
 // ---- CATEGORIES (sidebar) ----
-$allCats = apiGet('/categories');
+$allCats = $db->query("
+    SELECT c.*, COUNT(p.id) AS nb
+    FROM categories c
+    LEFT JOIN produits p ON p.categorie_id = c.id AND p.actif = 1
+    GROUP BY c.id ORDER BY c.ordre
+")->fetchAll();
 
 // Premier slide hero par defaut
 $firstSlide = $heroSlides[0] ?? null;
@@ -193,7 +210,7 @@ setTimeout(function() {
           <li class="cat-item <?= $i===0?'active':'' ?>" data-slug="<?= $c['slug'] ?>">
             <i class="<?= $c['icone'] ?>"></i>
             <span><?= htmlspecialchars($c['nom']) ?></span>
-            <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= $c['nb_produits'] ?>)</span>
+            <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= $c['nb'] ?>)</span>
             <i class="fas fa-chevron-right"></i>
           </li>
           <?php endforeach; ?>
@@ -463,14 +480,6 @@ document.querySelectorAll('.btab').forEach(function(btn){
     });
   });
 });
-
-// Hamburger
-(function(){
-  var btn=document.querySelector('.nav-menu-btn'), links=document.querySelector('.nav-links');
-  if (!btn||!links) return;
-  btn.addEventListener('click', function(){ var o=links.classList.toggle('open'); btn.innerHTML=o?'<i class="fas fa-times"></i>':'<i class="fas fa-bars"></i>'; });
-  document.addEventListener('click', function(e){ if(!btn.contains(e.target)&&!links.contains(e.target)){ links.classList.remove('open'); btn.innerHTML='<i class="fas fa-bars"></i>'; } });
-})();
 
 // Voir Plus scroll
 var heroBtnVoir = document.getElementById('heroBtnVoir');

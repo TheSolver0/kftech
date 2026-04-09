@@ -4,21 +4,10 @@
 if (!isset($pageTitle)) $pageTitle = 'KF Tech - Boutique Informatique';
 if (!isset($pageDesc))  $pageDesc  = 'KF Tech, votre boutique informatique à Douala.';
 
-require_once __DIR__ . '/../config/api.php';
-
-// Récupérer catégories depuis l'API
-$cats = apiGet('categories');
-if (!is_array($cats)) $cats = [];
-
-// Vérifier si utilisateur connecté (via session)
-$user = null;
-if (isset($_SESSION['user_id'])) {
-    $user = [
-        'id' => $_SESSION['user_id'],
-        'prenom' => $_SESSION['user_prenom'] ?? 'Utilisateur',
-        'nom' => $_SESSION['user_nom'] ?? ''
-    ];
-}
+require_once __DIR__ . '/../config/db.php';
+$db   = getDB();
+$cats = $db->query("SELECT * FROM categories ORDER BY ordre")->fetchAll();
+$user = isLoggedIn() ? getCurrentUser() : null;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -101,6 +90,14 @@ if (isset($_SESSION['user_id'])) {
     <div class="nav-left">
       <button class="nav-menu-btn"><i class="fas fa-bars"></i></button>
       <ul class="nav-links">
+        <!-- LIEN ACCUEIL POUR MOBILE -->
+        <li>
+          <a href="index.php">
+            <i class="fas fa-home"></i> Accueil
+          </a>
+        </li>
+        <li class="divider">|</li>
+        <!-- CATEGORIES -->
         <?php foreach ($cats as $i => $c): ?>
           <li>
             <a href="catalog.php?cat=<?= $c['slug'] ?>"

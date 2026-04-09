@@ -298,7 +298,7 @@ function initCart() {
 }
 
 // ================================================
-// HAMBURGER — visible seulement sur mobile
+// HAMBURGER + MOBILE NAV
 // ================================================
 function initHamburger() {
   var btn   = document.querySelector('.nav-menu-btn');
@@ -309,18 +309,14 @@ function initHamburger() {
   btn.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-
     var isOpen = links.classList.toggle('open');
     btn.innerHTML = isOpen
       ? '<i class="fas fa-times"></i>'
       : '<i class="fas fa-bars"></i>';
-
-    if (isOpen) {
-      links.style.display = 'flex';
-      links.style.maxHeight = 'calc(100vh - ' + (nav.offsetHeight + 2) + 'px)';
-    } else {
-      links.style.maxHeight = '';
-      links.style.display = '';
+    // Positionner le menu juste sous la navbar
+    if (isOpen && nav) {
+      var navBottom = nav.getBoundingClientRect().bottom;
+      links.style.top = navBottom + 'px';
     }
   });
 
@@ -332,7 +328,7 @@ function initHamburger() {
     });
   });
 
-  // Fermer en cliquant en dehors
+  // Fermer en dehors
   document.addEventListener('click', function(e) {
     if (!btn.contains(e.target) && !links.contains(e.target)) {
       links.classList.remove('open');
@@ -341,48 +337,30 @@ function initHamburger() {
   });
 }
 
-function adjustMobileNavbar() {
+// Calcule la hauteur totale header+navbar et définit --kf-offset
+// pour que body padding-top compense le fixed sans espace blanc
+function adjustOffset() {
   var header = document.getElementById('mainHeader');
   var nav    = document.getElementById('mainNav');
-  var hero   = document.querySelector('.hero');
   if (!header || !nav) return;
 
   if (window.innerWidth <= 768) {
-    header.style.position = 'fixed';
-    header.style.top = '0';
-    header.style.left = '0';
-    header.style.right = '0';
-    header.style.zIndex = '1000';
-    header.style.width = '100%';
+    // Mettre la navbar juste sous le header
+    var headerH = header.offsetHeight;
+    nav.style.top = headerH + 'px';
 
-    nav.style.position = 'fixed';
-    nav.style.top = header.offsetHeight + 'px';
-    nav.style.left = '0';
-    nav.style.right = '0';
-    nav.style.width = '100%';
-    nav.style.zIndex = '999';
+    // Définir l'offset total pour compenser le fixed
+    var totalOffset = headerH + nav.offsetHeight;
+    document.documentElement.style.setProperty('--kf-offset', totalOffset + 'px');
 
-    if (hero) {
-      hero.style.marginTop = (header.offsetHeight + nav.offsetHeight) + 'px';
+    // Mettre à jour le top du menu ouvert s'il est visible
+    var links = document.querySelector('.nav-links.open');
+    if (links) {
+      links.style.top = (headerH + nav.offsetHeight) + 'px';
     }
   } else {
-    header.style.position = '';
-    header.style.top = '';
-    header.style.left = '';
-    header.style.right = '';
-    header.style.zIndex = '';
-    header.style.width = '';
-
-    nav.style.position = '';
     nav.style.top = '';
-    nav.style.left = '';
-    nav.style.right = '';
-    nav.style.width = '';
-    nav.style.zIndex = '';
-
-    if (hero) {
-      hero.style.marginTop = '';
-    }
+    document.documentElement.style.setProperty('--kf-offset', '0px');
   }
 }
 
@@ -415,12 +393,21 @@ function initScroll() {
   var backBtn= document.getElementById('backTop');
 
   window.addEventListener('scroll', function() {
-    if (nav) nav.style.boxShadow = window.scrollY > 60 ? '0 4px 12px rgba(0,0,0,.15)' : 'none';
+    if (nav && window.innerWidth > 768) {
+      nav.style.boxShadow = window.scrollY > 60 ? '0 4px 12px rgba(0,0,0,.15)' : 'none';
+    }
     if (backBtn) backBtn.classList.toggle('show', window.scrollY > 400);
   });
 
-  window.addEventListener('resize', adjustMobileNavbar);
-  adjustMobileNavbar();
+  // Recalculer l'offset au resize (rotation écran, etc.)
+  window.addEventListener('resize', function() {
+    adjustOffset();
+  });
+
+  // Calculer au chargement — après que le DOM soit rendu
+  adjustOffset();
+  // Recalculer après les fonts/images chargées (hauteur header peut changer)
+  window.addEventListener('load', adjustOffset);
 
   if (backBtn) backBtn.addEventListener('click', function(e) {
     e.preventDefault();

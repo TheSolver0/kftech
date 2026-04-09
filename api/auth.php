@@ -1,7 +1,7 @@
 <?php
 // api/auth.php
 session_start();
-require_once __DIR__ . '/../config/api.php';
+require_once __DIR__ . '/../config/db.php';
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
@@ -18,9 +18,12 @@ if ($action === 'deconnexion') {
     session_destroy();
     session_start();
     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Vous avez été déconnecté avec succès.'];
-
-    // redirection vers la page d'accueil (depuis le dossier api)
-    header('Location: ../index.php');
+    // URL absolue fiable depuis n'importe quel sous-dossier
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host     = $_SERVER['HTTP_HOST'];
+    // SCRIPT_NAME = /kftech/api/auth.php → remonter 2 niveaux
+    $base     = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
+    header('Location: ' . $protocol . '://' . $host . $base . '/index.php');
     exit;
 }
 

@@ -1,67 +1,62 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/api.php';
+require_once __DIR__ . '/config/db.php';
 
+$db = getDB();
 $id = (int)($_GET['id'] ?? 0);
-if (!$id) {
-    header('Location: catalog.php');
-    exit;
-}
 
-// ============================================================
-// DONNÉES — un seul appel API remplace les 3 requêtes SQL
-// GET /api/ecom/products/{id} retourne :
-//   produit + avis + similaires dans la même réponse
-// ============================================================
-$p = apiGet('/products/' . $id);
+// ---- RÉCUPÉRER LE PRODUIT ----
+$stmt = $db->prepare("
+    SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug, c.icone AS cat_icone
+    FROM produits p
+    JOIN categories c ON p.categorie_id = c.id
+    WHERE p.id = ? AND p.actif = 1
+");
+$stmt->execute([$id]);
+$p = $stmt->fetch();
 
-// Produit introuvable ou inactif → redirection
-if (empty($p) || isset($p['erreur'])) {
+if (!$p) {
     header('Location: catalog.php');
     exit;
 }
 
 // ---- AVIS ----
-$avisList = $p['avis'] ?? [];
+$avisStmt = $db->prepare("SELECT * FROM avis WHERE produit_id = ? ORDER BY created_at DESC");
+$avisStmt->execute([$id]);
+$avisList = $avisStmt->fetchAll();
 
-// Moyenne et répartition calculées depuis les avis reçus
-$avgNote     = 0;
-$repartition = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+// Moyenne et répartition
+$avgNote = count($avisList) ? round(array_sum(array_column($avisList, 'note')) / count($avisList), 1) : $p['note'];
+$repartition = [5=>0, 4=>0, 3=>0, 2=>0, 1=>0];
+foreach ($avisList as $a) $repartition[(int)$a['note']]++;
 
-if (!empty($avisList)) {
-    $avgNote = round(
-        array_sum(array_column($avisList, 'note')) / count($avisList),
-        1
-    );
-    foreach ($avisList as $a) {
-        $repartition[(int)$a['note']]++;
-    }
-} else {
-    // Fallback sur la note globale du produit si pas d'avis individuels
-    $avgNote = (float)($p['note'] ?? 0);
-}
+// ---- PRODUITS SIMILAIRES ----
+$simStmt = $db->prepare("
+    SELECT p.*, c.slug AS cat_slug
+    FROM produits p JOIN categories c ON p.categorie_id = c.id
+    WHERE p.categorie_id = ? AND p.id != ? AND p.actif = 1
+    ORDER BY p.note DESC LIMIT 4
+");
+$simStmt->execute([$p['categorie_id'], $id]);
+$similaires = $simStmt->fetchAll();
 
-// ---- SIMILAIRES ----
-$similaires = $p['similaires'] ?? [];
-
-// ---- SPECS ----
+// ---- Specs (stockées en JSON ou texte) ----
+// On génère des specs génériques selon la catégorie
 $specs = [
-    'Marque'    => $p['marque']        ?: '—',
-    'Catégorie' => $p['categorie_nom'] ?: '—',
-    'Stock'     => ($p['stock'] ?? 0) . ' unités',
-    'Badge'     => $p['badge']         ?: '—',
-    'Note'      => $avgNote . '/5',
+    'Marque'     => $p['marque'] ?: '—',
+    'Catégorie'  => $p['cat_nom'],
+    'Stock'      => $p['stock'] . ' unités',
+    'Badge'      => $p['badge'],
+    'Note'       => $avgNote . '/5',
 ];
 
-// ---- REMISE ----
-$disc = (!empty($p['ancien_prix']) && $p['ancien_prix'] > $p['prix'])
-        ? round((1 - $p['prix'] / $p['ancien_prix']) * 100)
-        : 0;
+// ---- Calcul remise ----
+$disc = ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix'])
+        ? round((1 - $p['prix'] / $p['ancien_prix']) * 100) : 0;
 
-// ---- META PAGE ----
 $pageTitle = htmlspecialchars($p['nom']) . ' - KF Tech';
-$pageDesc  = substr(strip_tags($p['description'] ?? ''), 0, 160);
-$activeCat = $p['categorie_slug'] ?? '';
+$pageDesc  = substr(strip_tags($p['description']), 0, 160);
+$activeCat = $p['cat_slug'];
 
 function stars(float $n): string {
     $n = (int)round($n);
@@ -70,6 +65,7 @@ function stars(float $n): string {
 
 include __DIR__ . '/includes/header.php';
 ?>
+
 <style>
 /* ===== PRODUCT PAGE ===== */
 .prod-page { padding:32px 0 60px; }
@@ -219,7 +215,7 @@ include __DIR__ . '/includes/header.php';
   <div class="breadcrumb-bar">
     <a href="index.php">Accueil</a><span>›</span>
     <a href="catalog.php">Catalogue</a><span>›</span>
-    <a href="catalog.php?cat=<?= $p['categorie_slug'] ?>"><?= htmlspecialchars($p['categorie_nom']) ?></a><span>›</span>
+    <a href="catalog.php?cat=<?= $p['cat_slug'] ?>"><?= htmlspecialchars($p['cat_nom']) ?></a><span>›</span>
     <strong><?= htmlspecialchars($p['nom']) ?></strong>
   </div>
 </div>
@@ -252,8 +248,8 @@ include __DIR__ . '/includes/header.php';
   <!-- INFOS -->
   <div class="pi-info">
     <div class="pi-badge-wrap">
-      <a href="catalog.php?cat=<?= $p['categorie_slug'] ?>" class="pi-cat-link">
-        <i class="<?= 'fas fa-tag'  ?>"></i> <?= htmlspecialchars($p['categorie_nom']) ?>
+      <a href="catalog.php?cat=<?= $p['cat_slug'] ?>" class="pi-cat-link">
+        <i class="<?= $p['cat_icone'] ?>"></i> <?= htmlspecialchars($p['cat_nom']) ?>
       </a>
     </div>
     <h1 class="pi-name"><?= htmlspecialchars($p['nom']) ?></h1>

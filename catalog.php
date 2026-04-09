@@ -1,52 +1,87 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/api.php';
+require_once __DIR__ . '/config/db.php';
+
+$db = getDB();
 
 // ---- PARAMÈTRES ----
-$catSlug = trim($_GET['cat']    ?? '');
-$q       = trim($_GET['q']      ?? '');
-$marque  = trim($_GET['marque'] ?? '');
-$tri     = $_GET['tri']         ?? 'recent';
-$page    = max(1, (int)($_GET['page'] ?? 1));
-$pmin    = (int)($_GET['pmin']  ?? 0) ?: null;
-$pmax    = (int)($_GET['pmax']  ?? 0) ?: null;
-$limit   = 12;
+$catSlug  = trim($_GET['cat']  ?? '');
+$q        = trim($_GET['q']    ?? '');
+$marque   = trim($_GET['marque'] ?? '');
+$tri      = $_GET['tri']  ?? 'recent';
+$page     = max(1, (int)($_GET['page'] ?? 1));
+$limit    = 12;
+$offset   = ($page - 1) * $limit;
 
-// ============================================================
-// DONNÉES VIA L'API .NET
-// ============================================================
-
-// ---- CATÉGORIES (sidebar + catégorie courante) ----
-$allCats = apiGet('/categories');
-
+// ---- CATÉGORIE COURANTE ----
 $catInfo = null;
 if ($catSlug) {
-    foreach ($allCats as $c) {
-        if ($c['slug'] === $catSlug) {
-            $catInfo = $c;
-            break;
-        }
-    }
+    $stmt = $db->prepare("SELECT * FROM categories WHERE slug = ?");
+    $stmt->execute([$catSlug]);
+    $catInfo = $stmt->fetch();
 }
 
-// ---- PRODUITS + MARQUES + PAGINATION ----
-$params = array_filter([
-    'cat'    => $catSlug ?: null,
-    'q'      => $q       ?: null,
-    'marque' => $marque  ?: null,
-    'pmin'   => $pmin,
-    'pmax'   => $pmax,
-    'tri'    => $tri,
-    'page'   => $page,
-    'limit'  => $limit,
-], fn($v) => $v !== null && $v !== '');
+// ---- TOUTES LES CATÉGORIES (sidebar) ----
+$allCats = $db->query("
+    SELECT c.*, COUNT(p.id) AS nb
+    FROM categories c
+    LEFT JOIN produits p ON p.categorie_id = c.id AND p.actif = 1
+    GROUP BY c.id ORDER BY c.ordre
+")->fetchAll();
 
-$qs       = $params ? '?' . http_build_query($params) : '';
-$data     = apiGet('/products' . $qs);
-$produits   = $data['produits']  ?? [];
-$total      = $data['total']     ?? 0;
-$totalPages = $data['pages']     ?? 1;
-$allMarques = $data['marques']   ?? [];
+// ---- MARQUES DISPONIBLES ----
+if ($catInfo) {
+    $marqStmt = $db->prepare("SELECT DISTINCT marque FROM produits WHERE actif = 1 AND categorie_id = ? AND marque != '' ORDER BY marque");
+    $marqStmt->execute([$catInfo['id']]);
+} else {
+    $marqStmt = $db->query("SELECT DISTINCT marque FROM produits WHERE actif = 1 AND marque != '' ORDER BY marque");
+}
+$allMarques = $marqStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// ---- CONSTRUIRE LA REQUÊTE PRODUITS ----
+$where  = ["p.actif = 1"];
+$params = [];
+
+if ($catInfo) {
+    $where[]  = "p.categorie_id = ?";
+    $params[] = $catInfo['id'];
+}
+if ($q) {
+    $where[]  = "(p.nom LIKE ? OR p.description LIKE ? OR p.marque LIKE ?)";
+    $like      = "%$q%";
+    $params   = array_merge($params, [$like, $like, $like]);
+}
+if ($marque) {
+    $where[]  = "p.marque = ?";
+    $params[] = $marque;
+}
+
+$whereSQL = "WHERE " . implode(" AND ", $where);
+
+// Tri
+$orderSQL = match($tri) {
+    'prix_asc'  => "p.prix ASC",
+    'prix_desc' => "p.prix DESC",
+    'note'      => "p.note DESC, p.nb_avis DESC",
+    'promo'     => "(p.ancien_prix - p.prix) DESC",
+    default     => "p.created_at DESC",
+};
+
+// Total
+$totalStmt = $db->prepare("SELECT COUNT(*) FROM produits p JOIN categories c ON p.categorie_id=c.id $whereSQL");
+$totalStmt->execute($params);
+$total = (int)$totalStmt->fetchColumn();
+$totalPages = max(1, ceil($total / $limit));
+
+// Produits
+$sql = "SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug
+        FROM produits p JOIN categories c ON p.categorie_id = c.id
+        $whereSQL
+        ORDER BY $orderSQL
+        LIMIT $limit OFFSET $offset";
+$stmt = $db->prepare($sql);
+$stmt->execute($params);
+$produits = $stmt->fetchAll();
 
 // ---- PAGE TITLE ----
 if ($q)           $pageTitle = "Résultats pour \"$q\" - KF Tech";
@@ -55,14 +90,16 @@ else              $pageTitle = "Catalogue - KF Tech";
 
 $activeCat = $catSlug;
 
-function buildUrl(array $extra = []): string {
-    $base   = array_filter($_GET, fn($k) => $k !== 'page', ARRAY_FILTER_USE_KEY);
-    $merged = array_merge($base, $extra);
+// ---- Construire URL pour pagination (sans 'page') ----
+function buildUrl($params = []) {
+    $base = array_filter($_GET, fn($k) => $k !== 'page', ARRAY_FILTER_USE_KEY);
+    $merged = array_merge($base, $params);
     return 'catalog.php?' . http_build_query($merged);
 }
 
 include __DIR__ . '/includes/header.php';
 ?>
+
 <style>
 /* ===== CATALOG PAGE ===== */
 .catalog-hero {
@@ -194,7 +231,7 @@ include __DIR__ . '/includes/header.php';
           <li class="filter-cat-item">
             <a href="catalog.php" class="<?= !$catSlug ? 'active' : '' ?>">
               <span><i class="fas fa-th-large"></i> Toutes les catégories</span>
-              <span class="cnt">(<?= array_sum(array_column($allCats, 'nb_produits')) ?>)</span>
+              <span class="cnt">(<?= array_sum(array_column($allCats, 'nb')) ?>)</span>
             </a>
           </li>
           <?php foreach ($allCats as $c): ?>
@@ -202,7 +239,7 @@ include __DIR__ . '/includes/header.php';
             <a href="catalog.php?cat=<?= $c['slug'] ?><?= $q ? '&q='.urlencode($q) : '' ?>"
                class="<?= $catSlug === $c['slug'] ? 'active' : '' ?>">
               <span><i class="<?= $c['icone'] ?>"></i> <?= htmlspecialchars($c['nom']) ?></span>
-              <span class="cnt">(<?= $c['nb_produits'] ?>)</span>
+              <span class="cnt">(<?= $c['nb'] ?>)</span>
             </a>
           </li>
           <?php endforeach; ?>
