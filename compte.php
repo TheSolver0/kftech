@@ -9,11 +9,6 @@ if (!$user) {
     exit;
 }
 
-if (!$user) {
-    header('Location: login.php?redirect=compte');
-    exit;
-}
-
 $pageTitle = 'Mon compte - KF Tech';
 $pageDesc  = 'Gérez votre compte client KF Tech.';
 include __DIR__ . '/includes/header.php';
@@ -32,9 +27,9 @@ include __DIR__ . '/includes/header.php';
         <div class="account-section">
           <h2>Informations du compte</h2>
           <ul>
-            <li><strong>Nom :</strong> <?= htmlspecialchars($user['nom']) ?></li>
-            <li><strong>Email :</strong> <?= htmlspecialchars($user['email']) ?></li>
-            <li><strong>WhatsApp :</strong> <?= htmlspecialchars($user['telephone']) ?></li>
+            <li><strong>Nom :</strong> <?= htmlspecialchars($user['nom'] ?: 'Non renseigné') ?></li>
+            <li><strong>Email :</strong> <?= htmlspecialchars($user['email'] ?: 'Non renseigné') ?></li>
+            <li><strong>WhatsApp :</strong> <?= htmlspecialchars($user['telephone'] ?: 'Non renseigné') ?></li>
           </ul>
         </div>
 

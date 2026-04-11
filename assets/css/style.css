@@ -251,6 +251,26 @@ img { max-width: 100%; display: block; }
 .help-form textarea:focus,
 .help-form input:focus { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(242,101,34,.1); }
 .help-form .btn-primary { width: 100%; }
+.help-form-message {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  display: none;
+}
+.help-form-message.success {
+  display: block;
+  background: #ecf8f1;
+  border: 1px solid #7dd3a6;
+  color: #166534;
+}
+.help-form-message.error {
+  display: block;
+  background: #fff1f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+}
 @media (max-width: 900px) { .help-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .help-form { padding: 24px; } }
 

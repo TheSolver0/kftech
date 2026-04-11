@@ -26,7 +26,7 @@ function getCookieUser() {
         'id' => $decoded['id'],
         'prenom' => $decoded['prenom'] ?? 'Utilisateur',
         'nom' => $decoded['nom'] ?? '',
-        'email' => $decoded['email'],
+        'email' => $decoded['email'] ?? '',
         'telephone' => $decoded['telephone'] ?? '',
         'role' => $decoded['role'] ?? 'client',
         'mot_de_passe_hash' => $decoded['mot_de_passe_hash'] ?? null,

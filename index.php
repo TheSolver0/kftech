@@ -514,6 +514,13 @@ document.querySelectorAll('.btab').forEach(function(btn){
 // Formulaire d'assistance
 var helpForm = document.getElementById('helpForm');
 if (helpForm) {
+  var helpMessageBox = document.getElementById('helpFormMessage');
+  function showHelpFormMessage(text, type) {
+    if (!helpMessageBox) return;
+    helpMessageBox.textContent = text;
+    helpMessageBox.className = 'help-form-message ' + (type === 'success' ? 'success' : 'error');
+  }
+
   helpForm.addEventListener('submit', function(e) {
     e.preventDefault();
     var msg   = document.getElementById('helpMessage').value.trim();
@@ -521,9 +528,11 @@ if (helpForm) {
     var email = document.getElementById('helpEmail').value.trim();
 
     if (!msg || !phone || !email) {
-      alert('Veuillez remplir tous les champs du formulaire.');
+      showHelpFormMessage('Veuillez remplir tous les champs du formulaire.', 'error');
       return;
     }
+
+    showHelpFormMessage('Données envoyées avec succès ! Nous vous contacterons bientôt.', 'success');
 
     var subject = encodeURIComponent('Demande d\'assistance KF Tech');
     var body = encodeURIComponent(
@@ -646,6 +655,7 @@ if (heroBtnVoir) heroBtnVoir.addEventListener('click', function(e){ e.preventDef
       <input type="email" id="helpEmail" placeholder="votre@email.com" />
 
       <button type="submit" class="btn-primary">Envoyer</button>
+      <div id="helpFormMessage" class="help-form-message" aria-live="polite"></div>
     </form>
   </div>
 </section>
