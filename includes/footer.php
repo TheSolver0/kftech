@@ -15,7 +15,7 @@
         <span class="ficon"><i class="fas fa-phone"></i></span>+237 6 96 85 39 48
       </div>
       <div class="f-contact">
-        <span class="ficon"><i class="fas fa-envelope"></i></span>contact@kftech.cm
+        <span class="ficon"><i class="fas fa-envelope"></i></span>contact@kftech237.com
       </div>
     </div>
     <div class="f-links">
