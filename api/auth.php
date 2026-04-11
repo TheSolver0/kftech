@@ -31,6 +31,7 @@ if ($action === 'deconnexion') {
             $params["secure"], $params["httponly"]
         );
     }
+    setcookie('kftech_user', '', time() - 42000, '/');
     session_destroy();
     session_start();
     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Vous avez été déconnecté avec succès.'];
@@ -46,6 +47,13 @@ if ($action === 'session') {
     if (isLoggedIn()) {
         $user = getCurrentUser();
         echo json_encode(['connecte' => true, 'user' => $user]);
+    } elseif (!empty($_COOKIE['kftech_user'])) {
+        $localUser = json_decode($_COOKIE['kftech_user'], true);
+        if (is_array($localUser) && !empty($localUser['id'])) {
+            echo json_encode(['connecte' => true, 'user' => $localUser]);
+        } else {
+            echo json_encode(['connecte' => false, 'user' => null]);
+        }
     } else {
         echo json_encode(['connecte' => false, 'user' => null]);
     }

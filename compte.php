@@ -8,13 +8,32 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user = [
-    'id' => $_SESSION['user_id'],
-    'prenom' => $_SESSION['user_prenom'] ?? 'Utilisateur',
-    'nom' => $_SESSION['user_nom'] ?? '',
-    'email' => $_SESSION['user_email'] ?? '',
-    'telephone' => $_SESSION['user_telephone'] ?? '',
-];
+$user = null;
+if (isset($_SESSION['user_id'])) {
+    $user = [
+        'id' => $_SESSION['user_id'],
+        'prenom' => $_SESSION['user_prenom'] ?? 'Utilisateur',
+        'nom' => $_SESSION['user_nom'] ?? '',
+        'email' => $_SESSION['user_email'] ?? '',
+        'telephone' => $_SESSION['user_telephone'] ?? '',
+    ];
+} elseif (!empty($_COOKIE['kftech_user'])) {
+    $localUser = json_decode($_COOKIE['kftech_user'], true);
+    if (is_array($localUser) && !empty($localUser['id'])) {
+        $user = [
+            'id' => $localUser['id'],
+            'prenom' => $localUser['prenom'] ?? 'Utilisateur',
+            'nom' => $localUser['nom'] ?? '',
+            'email' => $localUser['email'] ?? '',
+            'telephone' => $localUser['telephone'] ?? '',
+        ];
+    }
+}
+
+if (!$user) {
+    header('Location: login.php?redirect=compte');
+    exit;
+}
 
 $pageTitle = 'Mon compte - KF Tech';
 $pageDesc  = 'Gérez votre compte client KF Tech.';

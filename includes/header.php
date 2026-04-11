@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/api.php';
 $cats = apiGet('categories');
 if (!is_array($cats)) $cats = [];
 
-// Vérifier si utilisateur connecté (via session)
+// Vérifier si utilisateur connecté (via session ou cookie local)
 $user = null;
 if (isset($_SESSION['user_id'])) {
     $user = [
@@ -18,6 +18,15 @@ if (isset($_SESSION['user_id'])) {
         'prenom' => $_SESSION['user_prenom'] ?? 'Utilisateur',
         'nom' => $_SESSION['user_nom'] ?? ''
     ];
+} elseif (!empty($_COOKIE['kftech_user'])) {
+    $localUser = json_decode($_COOKIE['kftech_user'], true);
+    if (is_array($localUser) && !empty($localUser['id'])) {
+        $user = [
+            'id' => $localUser['id'],
+            'prenom' => $localUser['prenom'] ?? 'Utilisateur',
+            'nom' => $localUser['nom'] ?? ''
+        ];
+    }
 }
 ?>
 <!DOCTYPE html>
