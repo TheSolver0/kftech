@@ -349,7 +349,7 @@ include __DIR__ . '/includes/header.php';
           <div class="seller-rt">★★★★★ (4.9) · Vérifié</div>
         </div>
       </div>
-      <a href="https://wa.me/237690048482?text=Bonjour, je suis intéressé par : <?= urlencode($p['nom']) ?>" target="_blank" class="btn-wa">
+      <a href="https://wa.me/237651271617?text=Bonjour, je suis intéressé par : <?= urlencode($p['nom']) ?>" target="_blank" class="btn-wa">
         <i class="fab fa-whatsapp"></i> Contacter via WhatsApp
       </a>
     </div>

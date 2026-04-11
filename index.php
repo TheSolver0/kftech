@@ -273,13 +273,20 @@ setTimeout(function() {
           </div>
         </div>
         <?php endforeach; ?>
-      </div>
+ </div>
       <div class="review-card">
         <h3>5 Star Review</h3>
         <div class="rev-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=180&q=80" alt="Review"/>
-        <p>"Produit incroyable, livraison rapide et service exceptionnel chez KF Tech !"</p>
-        <div class="reviewer"><strong>Jean-Paul M.</strong><small>Client verifie</small></div>
+        <img src="assets/images/Franck.jpeg"/>
+        <p>"Produit incroyable, livraison rapide et service de qualité exceptionnelle chez KF Tech !"</p>
+        <div class="reviewer"><strong>Franck Tiger</strong><small>Client verifie</small></div><br>
+
+        <h3>5 Star Review</h3>
+        <div class="rev-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <img src="assets/images/Luc.jpeg"/>
+        <p>"Service client réactif et produits de qualité supérieure. Je recommande vivement KF Tech !"</p>
+        <div class="reviewer"><strong>Luc Armand</strong><small>Client verifie</small></div>
+
       </div>
     </div>
   </div>
