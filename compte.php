@@ -27,9 +27,9 @@ include __DIR__ . '/includes/header.php';
         <div class="account-section">
           <h2>Informations du compte</h2>
           <ul>
-            <li><strong>Nom :</strong> <?= htmlspecialchars($user['nom'] ?: 'Non renseigné') ?></li>
-            <li><strong>Email :</strong> <?= htmlspecialchars($user['email'] ?: 'Non renseigné') ?></li>
-            <li><strong>WhatsApp :</strong> <?= htmlspecialchars($user['telephone'] ?: 'Non renseigné') ?></li>
+            <li><strong>Nom :</strong> <?= htmlspecialchars($user['nom'] ?? 'Non renseigné') ?></li>
+            <li><strong>Email :</strong> <?= htmlspecialchars($user['email'] ?? 'Non renseigné') ?></li>
+            <li><strong>WhatsApp :</strong> <?= htmlspecialchars($user['telephone'] ?? 'Non renseigné') ?></li>
           </ul>
         </div>
 
