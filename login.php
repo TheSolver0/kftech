@@ -223,6 +223,9 @@ document.getElementById('doLogin').addEventListener('click', function() {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if (data.succes) {
+      if (data.user) {
+        localStorage.setItem('kftech_user', JSON.stringify(data.user));
+      }
       showAlert('alertLogin', data.message, 'success');
       setTimeout(function(){
         var redirect = new URLSearchParams(window.location.search).get('redirect');
@@ -269,6 +272,9 @@ document.getElementById('doRegister').addEventListener('click', function() {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if (data.succes) {
+      if (data.user) {
+        localStorage.setItem('kftech_user', JSON.stringify(data.user));
+      }
       showAlert('alertRegister', data.message, 'success');
       setTimeout(function(){ window.location.href = 'index.php'; }, 1500);
     } else {

@@ -9,9 +9,44 @@ if (!empty($_SESSION['flash'])) {
     unset($_SESSION['flash']);
 }
 
-// ---- HERO SLIDES depuis l'API ----
-$heroData = apiGet('/hero');
-$heroSlides = $heroData['slides'] ?? [];
+// ---- CATEGORIES (sidebar + hero) ----
+$allCats = apiGet('/categories');
+$heroSlides = [];
+if (is_array($allCats) && count($allCats)) {
+    foreach ($allCats as $cat) {
+        if (empty($cat['slug'])) {
+            continue;
+        }
+        $prodData = apiGet('/products?cat=' . urlencode($cat['slug']) . '&limit=1');
+        $items = $prodData['produits'] ?? $prodData['items'] ?? [];
+        $firstProduct = $items[0] ?? null;
+        if (!$firstProduct) {
+            continue;
+        }
+
+        $stockPct = 80;
+        if (isset($firstProduct['stock']) && is_numeric($firstProduct['stock'])) {
+            $stockPct = min(100, max(12, (int)$firstProduct['stock']));
+        }
+
+        $heroSlides[] = [
+            'badge_texte'       => $cat['nom'] ?: ($firstProduct['badge'] ?? 'Produit'),
+            'titre'             => $firstProduct['nom'] ?? 'Produit KF Tech',
+            'sous_titre'        => 'Catégorie ' . ($cat['nom'] ?? ''),
+            'prix'              => $firstProduct['prix'] ?? 0,
+            'ancien_prix'       => $firstProduct['ancien_prix'] ?? 0,
+            'image'             => $firstProduct['image'] ?? 'assets/images/produit1.jpg',
+            'btn_principal_lien'=> 'product.php?id=' . ($firstProduct['id'] ?? ''),
+            'stock_pct'         => $stockPct,
+        ];
+    }
+}
+
+// Si rien n'a été généré, on retombe sur l'ancien endpoint hero
+if (empty($heroSlides)) {
+    $heroData = apiGet('/hero');
+    $heroSlides = $heroData['slides'] ?? [];
+}
 
 // ---- MEILLEURS PRODUITS (sidebar) ----
 $bestData  = apiGet('/products/meilleurs');
@@ -27,10 +62,7 @@ $smartData2 = apiGet('/products?cat=tablettes&limit=2');
 $smartProds = array_merge(
     $smartData1['produits'] ?? [],
     $smartData2['produits'] ?? []
-); 
-
-// ---- CATEGORIES (sidebar) ----
-$allCats = apiGet('/categories');
+);
 
 // Premier slide hero par defaut
 $firstSlide = $heroSlides[0] ?? null;
@@ -182,6 +214,34 @@ setTimeout(function() {
   </div>
 </section>
 
+<!-- SECTION ASSISTANCE -->
+<section class="help-section pad">
+  <div class="container help-grid">
+    <div class="help-info">
+      <span class="section-label">Besoin d'aide ?</span>
+      <h2>Nous sommes prêts à vous aider</h2>
+      <p>Envoyez-nous votre problème, votre adresse email et votre numéro WhatsApp. Notre équipe vous répondra par email ou par WhatsApp dès que possible.</p>
+      <div class="help-contact">
+        <div><strong>Email :</strong> contact@kftech237.com</div>
+        <div><strong>WhatsApp :</strong> +237 6 96 85 39 48</div>
+      </div>
+    </div>
+
+    <form id="helpForm" class="help-form" novalidate>
+      <label for="helpMessage">Votre message *</label>
+      <textarea id="helpMessage" placeholder="Décrivez votre souci ici..."></textarea>
+
+      <label for="helpPhone">Numéro WhatsApp *</label>
+      <input type="tel" id="helpPhone" placeholder="+237 6 XX XX XX XX" />
+
+      <label for="helpEmail">Email *</label>
+      <input type="email" id="helpEmail" placeholder="votre@email.com" />
+
+      <button type="submit" class="btn-primary">Envoyer</button>
+    </form>
+  </div>
+</section>
+
 <!-- PRODUITS TENDANCE -->
 <section class="trending-section pad" id="trending-section">
   <div class="container">
@@ -226,7 +286,11 @@ setTimeout(function() {
                 <?php if ($p['ancien_prix']): ?><span class="prod-price-old"><?= prix((float)$p['ancien_prix']) ?></span><?php endif; ?>
               </div>
               <p class="prod-avail">Stock : <strong><?= $p['stock'] ?></strong></p>
-              <button class="btn-add" data-id="<?= $p['id'] ?>" onclick="event.stopPropagation()">Ajouter au panier</button>
+              <button class="btn-add" data-id="<?= $p['id'] ?>"
+                      data-name="<?= htmlspecialchars($p['nom'], ENT_QUOTES) ?>"
+                      data-price="<?= htmlspecialchars($p['prix'], ENT_QUOTES) ?>"
+                      data-image="<?= htmlspecialchars($p['image'], ENT_QUOTES) ?>"
+                      onclick="event.stopPropagation()">Ajouter au panier</button>
             </div>
           </div>
           <?php endforeach; ?>
@@ -269,7 +333,11 @@ setTimeout(function() {
               <?php if ($sp['ancien_prix']): ?><span class="prod-price-old"><?= prix((float)$sp['ancien_prix']) ?></span><?php endif; ?>
             </div>
             <p class="prod-avail">Available: <strong><?= $sp['stock'] ?></strong></p>
-            <button class="btn-add" data-id="<?= $sp['id'] ?>" onclick="event.stopPropagation()">Ajouter au panier</button>
+            <button class="btn-add" data-id="<?= $sp['id'] ?>"
+                    data-name="<?= htmlspecialchars($sp['nom'], ENT_QUOTES) ?>"
+                    data-price="<?= htmlspecialchars($sp['prix'], ENT_QUOTES) ?>"
+                    data-image="<?= htmlspecialchars($sp['image'], ENT_QUOTES) ?>"
+                    onclick="event.stopPropagation()">Ajouter au panier</button>
           </div>
         </div>
         <?php endforeach; ?>
@@ -470,6 +538,33 @@ document.querySelectorAll('.btab').forEach(function(btn){
     });
   });
 });
+
+// Formulaire d'assistance
+var helpForm = document.getElementById('helpForm');
+if (helpForm) {
+  helpForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var msg   = document.getElementById('helpMessage').value.trim();
+    var phone = document.getElementById('helpPhone').value.trim();
+    var email = document.getElementById('helpEmail').value.trim();
+
+    if (!msg || !phone || !email) {
+      alert('Veuillez remplir tous les champs du formulaire.');
+      return;
+    }
+
+    var subject = encodeURIComponent('Demande d\'assistance KF Tech');
+    var body = encodeURIComponent(
+      'Bonjour KF Tech,%0D%0A%0D%0A' +
+      'J\'ai besoin d\'aide avec :%0D%0A' + msg + '%0D%0A%0D%0A' +
+      'Mon numéro WhatsApp : ' + phone + '%0D%0A' +
+      'Mon email : ' + email + '%0D%0A%0D%0A' +
+      'Merci.'
+    );
+
+    window.location.href = 'mailto:contact@kftech237.com?subject=' + subject + '&body=' + body;
+  });
+}
 
 // Hamburger
 // (function(){

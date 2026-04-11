@@ -123,10 +123,13 @@ if (isset($_SESSION['user_id'])) {
       </ul>
     </div>
     <?php if ($user): ?>
-      <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="color:#ccc;font-size:13px">
           Bonjour, <strong style="color:var(--orange)"><?= htmlspecialchars($user['prenom']) ?></strong>
         </span>
+        <a href="compte.php" class="btn-connexion" style="background:#555">
+          Mon compte
+        </a>
         <a href="api/auth.php?action=deconnexion" class="btn-connexion" style="background:#555">
           Déconnexion
         </a>

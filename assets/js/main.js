@@ -3,6 +3,34 @@
 var API_BASE = 'api/produits.php';
 var AUTH_API = 'api/auth.php';
 
+function getLocalUser() {
+  try {
+    return JSON.parse(localStorage.getItem('kftech_user') || 'null');
+  } catch (e) {
+    return null;
+  }
+}
+function setLocalUser(user) {
+  if (user && user.id) {
+    localStorage.setItem('kftech_user', JSON.stringify(user));
+  }
+}
+function clearLocalUser() {
+  localStorage.removeItem('kftech_user');
+}
+function getStoredFavoris(userId) {
+  if (!userId) return [];
+  try {
+    return JSON.parse(localStorage.getItem('kftech_favoris_' + userId) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function saveStoredFavoris(userId, ids) {
+  if (!userId) return;
+  localStorage.setItem('kftech_favoris_' + userId, JSON.stringify(ids));
+}
+
 // ================================================
 // PANIER — stocké en localStorage
 // ================================================
@@ -11,6 +39,37 @@ function getCart() {
 }
 function saveCart(c) {
   localStorage.setItem('kftech_cart', JSON.stringify(c));
+}
+
+function getProductFromButton(btn) {
+  if (!btn) return null;
+  var id = btn.dataset.id;
+  var name = btn.dataset.name;
+  var price = btn.dataset.price;
+  var image = btn.dataset.image;
+  if (id && name && price) {
+    return {
+      id: id,
+      nom: name,
+      prix: parseFloat(price) || 0,
+      image: image || ''
+    };
+  }
+  var card = btn.closest('.prod-card');
+  if (!card) return null;
+  var title = card.querySelector('.prod-name');
+  var priceEl = card.querySelector('.prod-price-new');
+  var imgEl = card.querySelector('img');
+  var parsedPrice = 0;
+  if (priceEl) {
+    parsedPrice = parseFloat(priceEl.textContent.replace(/[^0-9]/g, '')) || 0;
+  }
+  return {
+    id: id || btn.dataset.wishId || null,
+    nom: title ? title.textContent.trim() : '',
+    prix: parsedPrice,
+    image: imgEl ? imgEl.src : ''
+  };
 }
 
 function addToCart(produit, qty) {
@@ -259,10 +318,7 @@ function initCart() {
   });
 
   // ---- DÉLÉGATION : boutons "Ajouter au panier" ----
-  // On utilise mousedown au lieu de click pour éviter
-  // le conflit avec onclick="event.stopPropagation()" des cartes
   document.addEventListener('click', function(e) {
-    // Chercher le bouton .btn-add le plus proche
     var btn = e.target.closest('.btn-add');
     if (!btn) return;
 
@@ -270,12 +326,27 @@ function initCart() {
     e.preventDefault();
     e.stopPropagation();
 
-    var id = btn.dataset.id;
-    if (!id) return;
-
-    // Désactiver temporairement pour éviter double-clic
     if (btn.disabled) return;
     btn.disabled = true;
+
+    var product = getProductFromButton(btn);
+    if (product && product.id && product.nom && product.prix) {
+      addToCart(product, 1);
+      btn.textContent = '✓ Ajouté !';
+      btn.style.background = '#2ecc71';
+      setTimeout(function() {
+        btn.textContent = 'Ajouter au panier';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 1500);
+      return;
+    }
+
+    var id = btn.dataset.id;
+    if (!id) {
+      btn.disabled = false;
+      return;
+    }
 
     fetch(API_BASE + '?action=single&id=' + id)
       .then(function(r) { return r.json(); })
@@ -469,7 +540,15 @@ function loadFavorisIds() {
         updateWishBadge();
       }
     })
-    .catch(function() { /* non connecté, silencieux */ });
+    .catch(function() {
+      // Si l'API favoris n'est pas disponible, on utilise le stockage local
+      var user = getLocalUser();
+      if (user && user.id) {
+        FAV_IDS = getStoredFavoris(user.id);
+        updateAllWishButtons();
+        updateWishBadge();
+      }
+    });
 }
 
 // Mettre à jour l'apparence de tous les boutons favori sur la page
@@ -491,16 +570,14 @@ function updateWishBadge() {
 
 // Toggle favori — demande connexion si non connecté
 function toggleFavori(produitId, btnEl) {
-  // Vérifier la session
   fetch('api/auth.php?action=session')
     .then(function(r) { return r.json(); })
     .then(function(session) {
       if (!session.connecte) {
-        // Non connecté → afficher modal de connexion
         showModalConnexionFavoris(produitId);
         return;
       }
-      // Connecté → toggle en base
+      var userId = session.user && session.user.id ? session.user.id : null;
       fetch('api/favoris.php?action=toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -516,10 +593,53 @@ function toggleFavori(produitId, btnEl) {
             FAV_IDS = FAV_IDS.filter(function(id) { return id !== produitId; });
             showToast('Retiré des favoris', '');
           }
+          if (userId) saveStoredFavoris(userId, FAV_IDS);
           updateAllWishButtons();
           updateWishBadge();
         }
+      })
+      .catch(function() {
+        // API favoris indisponible, fallback sur storage local
+        if (!userId) {
+          showModalConnexionFavoris(produitId);
+          return;
+        }
+        var stored = getStoredFavoris(userId);
+        var action = stored.indexOf(produitId) === -1 ? 'ajoute' : 'retire';
+        if (action === 'ajoute') {
+          stored.push(produitId);
+          if (FAV_IDS.indexOf(produitId) === -1) FAV_IDS.push(produitId);
+          showToast('❤ Ajouté aux favoris !', 'success');
+        } else {
+          stored = stored.filter(function(id) { return id !== produitId; });
+          FAV_IDS = FAV_IDS.filter(function(id) { return id !== produitId; });
+          showToast('Retiré des favoris', '');
+        }
+        saveStoredFavoris(userId, stored);
+        updateAllWishButtons();
+        updateWishBadge();
       });
+    })
+    .catch(function() {
+      var user = getLocalUser();
+      if (!user || !user.id) {
+        showModalConnexionFavoris(produitId);
+        return;
+      }
+      var stored = getStoredFavoris(user.id);
+      var action = stored.indexOf(produitId) === -1 ? 'ajoute' : 'retire';
+      if (action === 'ajoute') {
+        stored.push(produitId);
+        if (FAV_IDS.indexOf(produitId) === -1) FAV_IDS.push(produitId);
+        showToast('❤ Ajouté aux favoris !', 'success');
+      } else {
+        stored = stored.filter(function(id) { return id !== produitId; });
+        FAV_IDS = FAV_IDS.filter(function(id) { return id !== produitId; });
+        showToast('Retiré des favoris', '');
+      }
+      saveStoredFavoris(user.id, stored);
+      updateAllWishButtons();
+      updateWishBadge();
     });
 }
 

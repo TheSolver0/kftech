@@ -2,6 +2,22 @@
 // api/auth.php
 session_start();
 require_once __DIR__ . '/../config/api.php';
+require_once __DIR__ . '/../config/db.php';
+
+function persistSessionCookie() {
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(
+            session_name(),
+            session_id(),
+            time() + 30 * 24 * 3600,
+            $params['path'],
+            $params['domain'],
+            $params['secure'],
+            $params['httponly']
+        );
+    }
+}
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
@@ -59,7 +75,10 @@ switch ($action) {
             jsonResponse(['succes' => false, 'message' => 'Adresse email invalide.'], 400);
         }
 
-        $db   = getDB();
+        $db = getDB();
+        if (!$db) {
+            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
+        }
         $stmt = $db->prepare("SELECT * FROM utilisateurs WHERE LOWER(email) = ? AND actif = 1");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
@@ -80,9 +99,13 @@ switch ($action) {
 
         // Connexion réussie
         session_regenerate_id(true);
-        $_SESSION['user_id']   = $user['id'];
-        $_SESSION['user_nom']  = $user['prenom'] . ' ' . $user['nom'];
-        $_SESSION['user_role'] = $user['role'];
+        persistSessionCookie();
+        $_SESSION['user_id']        = $user['id'];
+        $_SESSION['user_prenom']    = $user['prenom'];
+        $_SESSION['user_nom']       = $user['prenom'] . ' ' . $user['nom'];
+        $_SESSION['user_email']     = $user['email'];
+        $_SESSION['user_telephone'] = $user['telephone'];
+        $_SESSION['user_role']      = $user['role'];
 
         jsonResponse([
             'succes'  => true,
@@ -118,6 +141,9 @@ switch ($action) {
         }
 
         $db = getDB();
+        if (!$db) {
+            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
+        }
 
         // Vérifier si email déjà utilisé (SEULEMENT les comptes clients normaux)
         $check = $db->prepare("SELECT id, prenom FROM utilisateurs WHERE LOWER(email) = ?");
@@ -143,9 +169,13 @@ switch ($action) {
 
         // Créer la session
         session_regenerate_id(true);
-        $_SESSION['user_id']   = $newId;
-        $_SESSION['user_nom']  = "$prenom $nom";
-        $_SESSION['user_role'] = 'client';
+        persistSessionCookie();
+        $_SESSION['user_id']        = $newId;
+        $_SESSION['user_prenom']    = $prenom;
+        $_SESSION['user_nom']       = "$prenom $nom";
+        $_SESSION['user_email']     = $email;
+        $_SESSION['user_telephone'] = $telephone;
+        $_SESSION['user_role']      = 'client';
 
         jsonResponse([
             'succes'  => true,
@@ -159,6 +189,32 @@ switch ($action) {
                 'role'      => 'client',
             ]
         ]);
+        break;
+
+    // ---- SUPPRESSION DE COMPTE ----
+    case 'delete_account':
+        if (!isLoggedIn()) {
+            jsonResponse(['succes' => false, 'message' => 'Connexion requise.'], 401);
+        }
+        $db = getDB();
+        if (!$db) {
+            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
+        }
+        $userId = $_SESSION['user_id'];
+        $stmt = $db->prepare('DELETE FROM utilisateurs WHERE id = ?');
+        $stmt->execute([$userId]);
+
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params['path'], $params['domain'],
+                $params['secure'], $params['httponly']
+            );
+        }
+        session_destroy();
+
+        jsonResponse(['succes' => true, 'message' => 'Votre compte a bien été supprimé.']);
         break;
 
     default:

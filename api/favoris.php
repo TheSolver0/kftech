@@ -5,9 +5,13 @@
 // GET  ?action=check&id=X           → vérifie si un produit est en favori
 session_start();
 require_once __DIR__ . '/../config/api.php';
+require_once __DIR__ . '/../config/db.php';
 
 // Créer la table si elle n'existe pas
 $db = getDB();
+if (!$db) {
+    jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
+}
 $db->query("CREATE TABLE IF NOT EXISTS favoris (
     id INT AUTO_INCREMENT PRIMARY KEY,
     utilisateur_id INT NOT NULL,
