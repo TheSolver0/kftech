@@ -214,34 +214,6 @@ setTimeout(function() {
   </div>
 </section>
 
-<!-- SECTION ASSISTANCE -->
-<section class="help-section pad">
-  <div class="container help-grid">
-    <div class="help-info">
-      <span class="section-label">Besoin d'aide ?</span>
-      <h2>Nous sommes prêts à vous aider</h2>
-      <p>Envoyez-nous votre problème, votre adresse email et votre numéro WhatsApp. Notre équipe vous répondra par email ou par WhatsApp dès que possible.</p>
-      <div class="help-contact">
-        <div><strong>Email :</strong> contact@kftech237.com</div>
-        <div><strong>WhatsApp :</strong> +237 6 96 85 39 48</div>
-      </div>
-    </div>
-
-    <form id="helpForm" class="help-form" novalidate>
-      <label for="helpMessage">Votre message *</label>
-      <textarea id="helpMessage" placeholder="Décrivez votre souci ici..."></textarea>
-
-      <label for="helpPhone">Numéro WhatsApp *</label>
-      <input type="tel" id="helpPhone" placeholder="+237 6 XX XX XX XX" />
-
-      <label for="helpEmail">Email *</label>
-      <input type="email" id="helpEmail" placeholder="votre@email.com" />
-
-      <button type="submit" class="btn-primary">Envoyer</button>
-    </form>
-  </div>
-</section>
-
 <!-- PRODUITS TENDANCE -->
 <section class="trending-section pad" id="trending-section">
   <div class="container">
@@ -649,5 +621,33 @@ if (heroBtnVoir) heroBtnVoir.addEventListener('click', function(e){ e.preventDef
   }
 })();
 </script>
+
+<!-- SECTION ASSISTANCE -->
+<section class="help-section pad">
+  <div class="container help-grid">
+    <div class="help-info">
+      <span class="section-label">Besoin d'aide ?</span>
+      <h2>Nous sommes prêts à vous aider</h2>
+      <p>Envoyez-nous votre problème, votre adresse email et votre numéro WhatsApp. Notre équipe vous répondra par email ou par WhatsApp dès que possible.</p>
+      <div class="help-contact">
+        <div><strong>Email :</strong> contact@kftech237.com</div>
+        <div><strong>WhatsApp :</strong> +237 6 96 85 39 48</div>
+      </div>
+    </div>
+
+    <form id="helpForm" class="help-form" novalidate>
+      <label for="helpMessage">Votre message *</label>
+      <textarea id="helpMessage" placeholder="Décrivez votre souci ici..."></textarea>
+
+      <label for="helpPhone">Numéro WhatsApp *</label>
+      <input type="tel" id="helpPhone" placeholder="+237 6 XX XX XX XX" />
+
+      <label for="helpEmail">Email *</label>
+      <input type="email" id="helpEmail" placeholder="votre@email.com" />
+
+      <button type="submit" class="btn-primary">Envoyer</button>
+    </form>
+  </div>
+</section>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

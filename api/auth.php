@@ -19,6 +19,34 @@ function persistSessionCookie() {
     }
 }
 
+function setPersistentUserCookie(array $user): void {
+    $cookieUser = [
+        'id' => $user['id'],
+        'prenom' => $user['prenom'],
+        'nom' => $user['nom'],
+        'email' => $user['email'],
+        'telephone' => $user['telephone'] ?? '',
+        'role' => $user['role'] ?? 'client',
+        'mot_de_passe_hash' => $user['mot_de_passe_hash'] ?? null,
+    ];
+    setcookie('kftech_user', json_encode($cookieUser, JSON_UNESCAPED_UNICODE), time() + 30 * 24 * 3600, '/', '', false, true);
+}
+
+function clearPersistentUserCookie(): void {
+    setcookie('kftech_user', '', time() - 42000, '/');
+}
+
+function setUserSession(array $user): void {
+    session_regenerate_id(true);
+    persistSessionCookie();
+    $_SESSION['user_id']        = $user['id'];
+    $_SESSION['user_prenom']    = $user['prenom'];
+    $_SESSION['user_nom']       = trim(($user['prenom'] ?? '') . ' ' . ($user['nom'] ?? ''));
+    $_SESSION['user_email']     = $user['email'];
+    $_SESSION['user_telephone'] = $user['telephone'] ?? '';
+    $_SESSION['user_role']      = $user['role'] ?? 'client';
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 // Déconnexion : pas de JSON, juste une redirection propre
@@ -31,29 +59,20 @@ if ($action === 'deconnexion') {
             $params["secure"], $params["httponly"]
         );
     }
-    setcookie('kftech_user', '', time() - 42000, '/');
+    clearPersistentUserCookie();
     session_destroy();
     session_start();
     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Vous avez été déconnecté avec succès.'];
 
-    // redirection vers la page d'accueil (depuis le dossier api)
     header('Location: ../index.php');
     exit;
 }
 
-// Vérifier session : pas besoin de JSON content-type
 if ($action === 'session') {
     header('Content-Type: application/json; charset=utf-8');
     if (isLoggedIn()) {
         $user = getCurrentUser();
         echo json_encode(['connecte' => true, 'user' => $user]);
-    } elseif (!empty($_COOKIE['kftech_user'])) {
-        $localUser = json_decode($_COOKIE['kftech_user'], true);
-        if (is_array($localUser) && !empty($localUser['id'])) {
-            echo json_encode(['connecte' => true, 'user' => $localUser]);
-        } else {
-            echo json_encode(['connecte' => false, 'user' => null]);
-        }
     } else {
         echo json_encode(['connecte' => false, 'user' => null]);
     }
@@ -83,48 +102,32 @@ switch ($action) {
             jsonResponse(['succes' => false, 'message' => 'Adresse email invalide.'], 400);
         }
 
-        $db = getDB();
-        if (!$db) {
-            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
-        }
-        $stmt = $db->prepare("SELECT * FROM utilisateurs WHERE LOWER(email) = ? AND actif = 1");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
-
-        // Utilisateur inexistant
-        if (!$user) {
+        $storedUser = getCurrentUser();
+        if (!$storedUser || strcasecmp($storedUser['email'], $email) !== 0) {
             jsonResponse([
                 'succes'  => false,
                 'message' => 'Aucun compte trouvé avec cet email. Veuillez créer un compte.',
-                'action'  => 'inscrire' // indice pour le JS
+                'action'  => 'inscrire'
             ], 401);
         }
 
-        // Mot de passe incorrect
-        if (!password_verify($pass, $user['mot_de_passe'])) {
+        if (empty($storedUser['mot_de_passe_hash']) || !password_verify($pass, $storedUser['mot_de_passe_hash'])) {
             jsonResponse(['succes' => false, 'message' => 'Mot de passe incorrect.'], 401);
         }
 
-        // Connexion réussie
-        session_regenerate_id(true);
-        persistSessionCookie();
-        $_SESSION['user_id']        = $user['id'];
-        $_SESSION['user_prenom']    = $user['prenom'];
-        $_SESSION['user_nom']       = $user['prenom'] . ' ' . $user['nom'];
-        $_SESSION['user_email']     = $user['email'];
-        $_SESSION['user_telephone'] = $user['telephone'];
-        $_SESSION['user_role']      = $user['role'];
+        setUserSession($storedUser);
+        setPersistentUserCookie($storedUser);
 
         jsonResponse([
             'succes'  => true,
-            'message' => 'Connexion réussie ! Bienvenue ' . $user['prenom'] . ' !',
+            'message' => 'Connexion réussie ! Bienvenue ' . $storedUser['prenom'] . ' !',
             'user'    => [
-                'id'        => $user['id'],
-                'prenom'    => $user['prenom'],
-                'nom'       => $user['nom'],
-                'email'     => $user['email'],
-                'telephone' => $user['telephone'],
-                'role'      => $user['role'],
+                'id'        => $storedUser['id'],
+                'prenom'    => $storedUser['prenom'],
+                'nom'       => $storedUser['nom'],
+                'email'     => $storedUser['email'],
+                'telephone' => $storedUser['telephone'],
+                'role'      => $storedUser['role'],
             ]
         ]);
         break;
@@ -137,7 +140,6 @@ switch ($action) {
         $telephone = trim($data['telephone']   ?? '');
         $pass      = $data['mot_de_passe']     ?? '';
 
-        // Validations
         if (!$prenom || !$nom || !$email || !$pass) {
             jsonResponse(['succes' => false, 'message' => 'Tous les champs obligatoires doivent être remplis.'], 400);
         }
@@ -148,17 +150,8 @@ switch ($action) {
             jsonResponse(['succes' => false, 'message' => 'Le mot de passe doit faire au moins 8 caractères.'], 400);
         }
 
-        $db = getDB();
-        if (!$db) {
-            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
-        }
-
-        // Vérifier si email déjà utilisé (SEULEMENT les comptes clients normaux)
-        $check = $db->prepare("SELECT id, prenom FROM utilisateurs WHERE LOWER(email) = ?");
-        $check->execute([$email]);
-        $existant = $check->fetch();
-
-        if ($existant) {
+        $storedUser = getCurrentUser();
+        if ($storedUser && strcasecmp($storedUser['email'], $email) === 0) {
             jsonResponse([
                 'succes'  => false,
                 'message' => 'Un compte existe déjà avec cet email. Veuillez vous connecter.',
@@ -166,24 +159,20 @@ switch ($action) {
             ], 409);
         }
 
-        // Créer le compte
-        $hash = password_hash($pass, PASSWORD_BCRYPT, ['cost' => 12]);
-        $insert = $db->prepare("
-            INSERT INTO utilisateurs (prenom, nom, email, telephone, mot_de_passe, role, actif)
-            VALUES (?, ?, ?, ?, ?, 'client', 1)
-        ");
-        $insert->execute([$prenom, $nom, $email, $telephone, $hash]);
-        $newId = (int)$db->lastInsertId();
+        $newId = 'local_' . bin2hex(random_bytes(5));
+        $hash  = password_hash($pass, PASSWORD_BCRYPT, ['cost' => 12]);
+        $newUser = [
+            'id' => $newId,
+            'prenom' => $prenom,
+            'nom' => $nom,
+            'email' => $email,
+            'telephone' => $telephone,
+            'role' => 'client',
+            'mot_de_passe_hash' => $hash,
+        ];
 
-        // Créer la session
-        session_regenerate_id(true);
-        persistSessionCookie();
-        $_SESSION['user_id']        = $newId;
-        $_SESSION['user_prenom']    = $prenom;
-        $_SESSION['user_nom']       = "$prenom $nom";
-        $_SESSION['user_email']     = $email;
-        $_SESSION['user_telephone'] = $telephone;
-        $_SESSION['user_role']      = 'client';
+        setUserSession($newUser);
+        setPersistentUserCookie($newUser);
 
         jsonResponse([
             'succes'  => true,
@@ -201,16 +190,10 @@ switch ($action) {
 
     // ---- SUPPRESSION DE COMPTE ----
     case 'delete_account':
-        if (!isLoggedIn()) {
+        $storedUser = getCurrentUser();
+        if (!$storedUser) {
             jsonResponse(['succes' => false, 'message' => 'Connexion requise.'], 401);
         }
-        $db = getDB();
-        if (!$db) {
-            jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
-        }
-        $userId = $_SESSION['user_id'];
-        $stmt = $db->prepare('DELETE FROM utilisateurs WHERE id = ?');
-        $stmt->execute([$userId]);
 
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
@@ -220,6 +203,7 @@ switch ($action) {
                 $params['secure'], $params['httponly']
             );
         }
+        clearPersistentUserCookie();
         session_destroy();
 
         jsonResponse(['succes' => true, 'message' => 'Votre compte a bien été supprimé.']);

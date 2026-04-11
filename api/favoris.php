@@ -7,84 +7,68 @@ session_start();
 require_once __DIR__ . '/../config/api.php';
 require_once __DIR__ . '/../config/db.php';
 
-// Créer la table si elle n'existe pas
-$db = getDB();
-if (!$db) {
-    jsonResponse(['succes' => false, 'message' => 'Base de données indisponible.'], 500);
-}
-$db->query("CREATE TABLE IF NOT EXISTS favoris (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    utilisateur_id INT NOT NULL,
-    produit_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_favori (utilisateur_id, produit_id),
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
-    FOREIGN KEY (produit_id) REFERENCES produits(id) ON DELETE CASCADE
-) ENGINE=InnoDB");
-
 $action = $_GET['action'] ?? '';
 $body   = json_decode(file_get_contents('php://input'), true) ?? [];
 
-// Toutes les actions nécessitent d'être connecté
 if (!isLoggedIn()) {
     jsonResponse(['succes' => false, 'connecte' => false, 'message' => 'Connexion requise.'], 401);
 }
 
-$userId = $_SESSION['user_id'];
+$user = getCurrentUser();
+$userId = $user['id'];
+$cookieKey = 'kftech_favoris_' . $userId;
+
+function loadFavorisIds(string $key): array {
+    $raw = $_COOKIE[$key] ?? '[]';
+    $ids = json_decode($raw, true);
+    if (!is_array($ids)) {
+        return [];
+    }
+    return array_values(array_unique(array_filter($ids, function($item) {
+        return $item !== null && $item !== '';
+    })));
+}
+
+function saveFavorisIds(string $key, array $ids): void {
+    setcookie($key, json_encode(array_values($ids), JSON_UNESCAPED_UNICODE), time() + 30 * 24 * 3600, '/');
+}
+
+$storedIds = loadFavorisIds($cookieKey);
 
 switch ($action) {
 
-    // ---- LISTE des favoris ----
     case 'liste':
-        $stmt = $db->prepare("
-            SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug
-            FROM favoris f
-            JOIN produits p ON f.produit_id = p.id
-            JOIN categories c ON p.categorie_id = c.id
-            WHERE f.utilisateur_id = ? AND p.actif = 1
-            ORDER BY f.created_at DESC
-        ");
-        $stmt->execute([$userId]);
-        $favoris = $stmt->fetchAll();
-        jsonResponse(['succes' => true, 'favoris' => $favoris, 'total' => count($favoris)]);
+        jsonResponse(['succes' => true, 'favoris' => $storedIds, 'total' => count($storedIds)]);
         break;
 
-    // ---- TOGGLE (ajouter ou retirer) ----
     case 'toggle':
-        $produitId = (int)($body['produit_id'] ?? $_GET['id'] ?? 0);
-        if (!$produitId) jsonResponse(['succes' => false, 'message' => 'Produit invalide.'], 400);
-
-        // Vérifier si déjà en favori
-        $check = $db->prepare("SELECT id FROM favoris WHERE utilisateur_id=? AND produit_id=?");
-        $check->execute([$userId, $produitId]);
-        $existe = $check->fetch();
-
-        if ($existe) {
-            // Retirer
-            $db->prepare("DELETE FROM favoris WHERE utilisateur_id=? AND produit_id=?")->execute([$userId, $produitId]);
-            jsonResponse(['succes' => true, 'action' => 'retire', 'message' => 'Retiré des favoris.']);
-        } else {
-            // Ajouter
-            $db->prepare("INSERT INTO favoris (utilisateur_id, produit_id) VALUES (?,?)")->execute([$userId, $produitId]);
-            jsonResponse(['succes' => true, 'action' => 'ajoute', 'message' => 'Ajouté aux favoris !']);
+        $produitId = $body['produit_id'] ?? $_GET['id'] ?? null;
+        if (!$produitId) {
+            jsonResponse(['succes' => false, 'message' => 'Produit invalide.'], 400);
         }
+        $produitId = (string)$produitId;
+        $found = array_search($produitId, $storedIds, true);
+        if ($found !== false) {
+            array_splice($storedIds, $found, 1);
+            saveFavorisIds($cookieKey, $storedIds);
+            jsonResponse(['succes' => true, 'action' => 'retire', 'message' => 'Retiré des favoris.']);
+        }
+        $storedIds[] = $produitId;
+        saveFavorisIds($cookieKey, $storedIds);
+        jsonResponse(['succes' => true, 'action' => 'ajoute', 'message' => 'Ajouté aux favoris !']);
         break;
 
-    // ---- VÉRIFIER si un produit est en favori ----
     case 'check':
-        $produitId = (int)($_GET['id'] ?? 0);
-        if (!$produitId) jsonResponse(['favori' => false]);
-        $check = $db->prepare("SELECT id FROM favoris WHERE utilisateur_id=? AND produit_id=?");
-        $check->execute([$userId, $produitId]);
-        jsonResponse(['favori' => (bool)$check->fetch()]);
+        $produitId = $_GET['id'] ?? null;
+        if (!$produitId) {
+            jsonResponse(['favori' => false]);
+        }
+        $produitId = (string)$produitId;
+        jsonResponse(['favori' => in_array($produitId, $storedIds, true)]);
         break;
 
-    // ---- LISTE des IDs en favori (pour marquer les coeurs sur les pages) ----
     case 'ids':
-        $stmt = $db->prepare("SELECT produit_id FROM favoris WHERE utilisateur_id=?");
-        $stmt->execute([$userId]);
-        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        jsonResponse(['ids' => array_map('intval', $ids)]);
+        jsonResponse(['ids' => $storedIds]);
         break;
 
     default:

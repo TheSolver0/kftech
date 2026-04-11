@@ -3,37 +3,30 @@ session_start();
 require_once __DIR__ . '/config/api.php';
 require_once __DIR__ . '/config/db.php';
 
-// Si non connecté → rediriger vers login
-if (!isset($_SESSION['user_id'])) {
+$user = getCurrentUser();
+if (!$user) {
     header('Location: login.php?redirect=favoris&msg=favoris');
     exit;
 }
 
-$userId = $_SESSION['user_id'];
+$userId = $user['id'];
+$cookieKey = 'kftech_favoris_' . $userId;
+$favorisIds = [];
+if (!empty($_COOKIE[$cookieKey])) {
+    $ids = json_decode($_COOKIE[$cookieKey], true);
+    if (is_array($ids)) {
+        $favorisIds = array_values(array_unique(array_filter($ids, function($item) {
+            return $item !== null && $item !== '';
+        })));
+    }
+}
 
-// Récupérer les favoris localement depuis la base de données
 $favoris = [];
-$db = getDB();
-if ($db) {
-    // Créer la table si elle n'existe pas encore, pour assurer que la page fonctionne
-    $db->query("CREATE TABLE IF NOT EXISTS favoris (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        utilisateur_id INT NOT NULL,
-        produit_id INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_favori (utilisateur_id, produit_id),
-        FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
-        FOREIGN KEY (produit_id) REFERENCES produits(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB");
-
-    $stmt = $db->prepare("SELECT p.*, c.nom AS cat_nom, c.slug AS cat_slug
-        FROM favoris f
-        JOIN produits p ON f.produit_id = p.id
-        JOIN categories c ON p.categorie_id = c.id
-        WHERE f.utilisateur_id = ? AND p.actif = 1
-        ORDER BY f.created_at DESC");
-    $stmt->execute([$userId]);
-    $favoris = $stmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($favorisIds as $id) {
+    $product = apiGet('/products/' . urlencode($id));
+    if (!empty($product) && empty($product['erreur'])) {
+        $favoris[] = $product;
+    }
 }
 
 function starsHtml(float $n): string {
