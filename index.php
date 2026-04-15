@@ -23,7 +23,7 @@ $trendProds = $trendData['produits'] ?? [];
 
 // ---- SMARTPHONES / TABLETTES ----
 $smartData1 = apiGet('/products?cat=smartphones&limit=3');
-$smartData2 = apiGet('/products?cat=tablettes&limit=2');
+$smartData2 = apiGet('/products?cat=tablettes&limit=3');
 $smartProds = array_merge(
     $smartData1['produits'] ?? [],
     $smartData2['produits'] ?? []
