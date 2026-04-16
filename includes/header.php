@@ -52,7 +52,7 @@ if (isset($_SESSION['user_id'])) {
     <div class="topbar-left">
       <span><i class="fas fa-map-marker-alt"></i> Douala, Rond point Deido</span>
       <span><i class="fas fa-truck"></i> Suivre ma commande</span>
-      <span><i class="fas fa-phone"></i> +237 6 96 85 39 48</span>
+      <span><i class="fas fa-phone"></i>  +237 6 51 27 16 17</span>
       <span class="topbar-msg"><i class="fas fa-heart"></i> Bienvenue chez KF-Tech. Les meilleurs produits électroniques !</span>
     </div>
     <div class="topbar-right">

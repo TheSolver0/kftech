@@ -12,7 +12,7 @@
         <span class="ficon"><i class="fas fa-map-marker-alt"></i></span>Gare routière de Limbe
       </div>
       <div class="f-contact">
-        <span class="ficon"><i class="fas fa-phone"></i></span>+237 6 96 85 39 48
+        <span class="ficon"><i class="fas fa-phone"></i></span>+237 6 51 27 16 17
       </div>
       <div class="f-contact">
         <span class="ficon"><i class="fas fa-envelope"></i></span>contact@kftech237.com

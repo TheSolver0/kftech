@@ -57,8 +57,8 @@ $trendData  = apiGet('/products/tendance');
 $trendProds = $trendData['produits'] ?? [];
 
 // ---- SMARTPHONES / TABLETTES ----
-$smartData1 = apiGet('/products?cat=smartphones&limit=2');
-$smartData2 = apiGet('/products?cat=tablettes&limit=2');
+$smartData1 = apiGet('/products?cat=smartphones&limit=4');
+$smartData2 = apiGet('/products?cat=tablettes&limit=4');
 $smartProds = array_merge(
     $smartData1['produits'] ?? [],
     $smartData2['produits'] ?? []
@@ -640,7 +640,7 @@ if (heroBtnVoir) heroBtnVoir.addEventListener('click', function(e){ e.preventDef
       <p>Envoyez-nous votre problème, votre adresse email et votre numéro WhatsApp. Notre équipe vous répondra par email ou par WhatsApp dès que possible.</p>
       <div class="help-contact">
         <div><strong>Email :</strong> contact@kftech237.com</div>
-        <div><strong>WhatsApp :</strong> +237 6 96 85 39 48</div>
+        <div><strong>WhatsApp :</strong> +237 6 51 27 16 17</div>
       </div>
     </div>
 

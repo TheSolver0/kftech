@@ -201,7 +201,7 @@ function commanderWhatsApp() {
     '💰 *Total : ' + formatPrix(total) + '*\n\n' +
     'Bonjour, je souhaite commander ces articles. Pouvez-vous me confirmer la disponibilité et les modalités de livraison ? Merci !';
 
-  var numero  = '237696853948'; // Numéro KF Tech sans + ni espaces
+  var numero  = '237651271617'; // Numéro KF Tech sans + ni espaces
   var url     = 'https://wa.me/' + numero + '?text=' + encodeURIComponent(message);
   window.open(url, '_blank');
 }
@@ -287,7 +287,7 @@ function acheterMaintenant(produit, qty) {
       (adresse ? '📍 *Adresse :* ' + adresse + '\n' : '') +
       '\nBonjour, je souhaite commander cet article. Merci de confirmer la disponibilité !';
 
-    var numero = '237690048482';
+    var numero = '237651271617';
     window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(message), '_blank');
     modal.remove();
   });
