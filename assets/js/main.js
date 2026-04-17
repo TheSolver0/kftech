@@ -206,6 +206,62 @@ function commanderWhatsApp() {
   window.open(url, '_blank');
 }
 
+function generateInvoicePdf() {
+  var cart = getCart();
+  if (!cart.length) {
+    showToast('Votre panier est vide !', 'error');
+    return;
+  }
+
+  var total = cart.reduce(function(s, i) { return s + i.prix * i.qty; }, 0);
+  var date = new Date();
+  var invoiceNumber = Math.floor(100000 + Math.random() * 900000);
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Facture KF TECH</title>' +
+    '<style>body{margin:0;padding:0;background:#f2f4f8;color:#0f172a;font-family:Inter,system-ui,Arial,sans-serif;} .invoice-container{max-width:900px;margin:0 auto;padding:38px 24px 48px;} .invoice-card{background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08);} .invoice-header{display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;padding:32px 32px 24px;background:linear-gradient(135deg,#ff7a00,#ff9f1c);color:#fff;} .company-brand h1{margin:0;font-size:32px;letter-spacing:.03em;} .company-brand p{margin:10px 0 0;font-size:14px;line-height:1.6;opacity:.9;} .invoice-meta{min-width:240px;background:rgba(255,255,255,.12);padding:18px;border-radius:18px;} .invoice-meta h2{margin:0 0 12px;font-size:18px;letter-spacing:.02em;} .invoice-meta p{margin:8px 0;font-size:14px;line-height:1.7;} .invoice-body{padding:32px;} .section-title{margin:0 0 20px;font-size:18px;color:#111;font-weight:700;letter-spacing:.01em;} .table-wrapper{overflow-x:auto;} table{width:100%;border-collapse:collapse;color:#1f2937;} th,td{padding:18px 16px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;} th{background:#f8fafc;color:#0f172a;font-weight:700;} td:last-child, th:last-child{text-align:right;} tbody tr:last-child td{border-bottom:none;} .totals{margin-top:24px;display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;} .totals .label{font-size:15px;color:#475569;} .totals .value{font-size:18px;font-weight:800;color:#111;} .footer-note{margin-top:32px;padding:24px 22px;border-radius:16px;background:#f8fafc;color:#475569;font-size:14px;line-height:1.9;} @media print{body{background:#fff;} .invoice-container{padding:0;} .invoice-card{box-shadow:none;} .no-print{display:none;} }</style></head><body>' +
+    '<div class="invoice-container">' +
+      '<div class="invoice-card">' +
+        '<div class="invoice-header">' +
+          '<div class="company-brand">' +
+            '<h1>KF TECH SARL</h1>' +
+            '<p>Douala, Cameroun<br>contact@kftech237.com<br>+237 6 51 27 16 17</p>' +
+          '</div>' +
+          '<div class="invoice-meta">' +
+            '<h2>FACTURE</h2>' +
+            '<p><strong>N° :</strong> ' + invoiceNumber + '</p>' +
+            '<p><strong>Date :</strong> ' + date.toLocaleDateString('fr-FR') + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="invoice-body">' +
+          '<p class="section-title">Détails de la commande</p>' +
+          '<div class="table-wrapper">' +
+            '<table>' +
+              '<thead><tr><th>Produit</th><th>Quantité</th><th>Prix unitaire</th><th>Total</th></tr></thead>' +
+              '<tbody>';
+
+  cart.forEach(function(item){
+    html += '<tr><td>' + item.nom + '</td><td>' + item.qty + '</td><td>' + formatPrix(item.prix) + '</td><td>' + formatPrix(item.prix * item.qty) + '</td></tr>';
+  });
+
+  html += '</tbody></table>' +
+          '</div>' +
+          '<div class="totals">' +
+            '<span class="label">Total général</span>' +
+            '<span class="value">' + formatPrix(total) + '</span>' +
+          '</div>' +
+          '<div class="footer-note">' +
+            'Merci pour votre achat chez KF TECH SARL. Cette facture correspond aux articles présents dans votre panier. Conservez-la pour le suivi de la livraison et la garantie du produit.' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<script>window.onload=function(){window.print();};</script>' +
+    '</body></html>';
+
+  var invoiceWindow = window.open('', '_blank');
+  invoiceWindow.document.write(html);
+  invoiceWindow.document.close();
+}
+
 // ================================================
 // ACHETER MAINTENANT — ouvre un mini-formulaire
 // puis envoie sur WhatsApp avec les infos du client
@@ -308,6 +364,13 @@ function initCart() {
   var overlay = document.getElementById('cartOverlay');
   if (overlay) overlay.addEventListener('click', function(e) {
     if (e.target === overlay) closeCartFn();
+  });
+
+  // Bouton "Télécharger la facture" dans le drawer
+  var btnInvoice = document.getElementById('btnInvoice');
+  if (btnInvoice) btnInvoice.addEventListener('click', function(e) {
+    e.preventDefault();
+    generateInvoicePdf();
   });
 
   // Bouton "Commander" dans le drawer → WhatsApp

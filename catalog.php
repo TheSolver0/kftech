@@ -199,10 +199,10 @@ include __DIR__ . '/includes/header.php';
           </li>
           <?php foreach ($allCats as $c): ?>
           <li class="filter-cat-item">
-            <a href="catalog.php?cat=<?= $c['slug'] ?><?= $q ? '&q='.urlencode($q) : '' ?>"
+            <a href="catalog.php?cat=<?= urlencode($c['slug']) ?><?= $q ? '&q='.urlencode($q) : '' ?>"
                class="<?= $catSlug === $c['slug'] ? 'active' : '' ?>">
-              <span><i class="<?= $c['icone'] ?>"></i> <?= htmlspecialchars($c['nom']) ?></span>
-              <span class="cnt">(<?= $c['nb_produits'] ?>)</span>
+              <span><i class="<?= categoryIconClass($c) ?>"></i> <?= htmlspecialchars($c['nom']) ?></span>
+              <span class="cnt">(<?= intval($c['nb_produits'] ?? 0) ?>)</span>
             </a>
           </li>
           <?php endforeach; ?>

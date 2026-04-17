@@ -64,6 +64,23 @@ $smartProds = array_merge(
     $smartData2['produits'] ?? []
 );
 
+$catCards = [];
+foreach ($allCats as $i => $cat) {
+    if ($i >= 3) break;
+    $prodData = apiGet('/products?cat=' . urlencode($cat['slug']) . '&limit=5');
+    $items = $prodData['produits'] ?? $prodData['items'] ?? [];
+    if (!is_array($items)) {
+        $items = [];
+    }
+    $names = array_map(function($item) { return $item['nom'] ?? ''; }, array_slice($items, 0, 5));
+    $catCards[] = [
+        'nom'      => $cat['nom'] ?? 'Catégorie',
+        'slug'     => $cat['slug'] ?? '',
+        'produits' => $names,
+        'image'    => $items[0]['image'] ?? 'assets/images/produit4.jpg',
+    ];
+}
+
 // Premier slide hero par defaut
 $firstSlide = $heroSlides[0] ?? null;
 
@@ -222,10 +239,10 @@ setTimeout(function() {
         <h3 class="sidebar-title"><span>Categorie</span></h3>
         <ul class="cat-list">
           <?php foreach ($allCats as $i => $c): ?>
-          <li class="cat-item <?= $i===0?'active':'' ?>" data-slug="<?= $c['slug'] ?>">
-            <i class="<?= $c['icone'] ?>"></i>
+          <li class="cat-item <?= $i===0?'active':'' ?>" data-slug="<?= htmlspecialchars($c['slug'] ?? '') ?>">
+            <i class="<?= categoryIconClass($c) ?>"></i>
             <span><?= htmlspecialchars($c['nom']) ?></span>
-            <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= $c['nb_produits'] ?>)</span>
+            <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= intval($c['nb_produits'] ?? 0) ?>)</span>
             <i class="fas fa-chevron-right"></i>
           </li>
           <?php endforeach; ?>
@@ -342,35 +359,25 @@ setTimeout(function() {
 <!-- CATEGORIES DE PRODUITS -->
 <section class="cat-prod-section pad">
   <div class="container">
-    <h2 class="sec-title-lg">Categories De Produits</h2>
+    <h2 class="sec-title-lg">Catégories de produits</h2>
     <div class="cat-prod-grid">
+      <?php foreach ($catCards as $card): ?>
       <div class="cpcard">
-        <div class="cpimg"><img src="assets/images/produit4.jpg" alt="Smartphone" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=180&q=80'"/></div>
-        <div class="cpinfo"><h4>Smartphone &amp; Tablet</h4><ul><li>Samsung Galaxy S23</li><li>iPhone 15 Pro</li><li>iPad Pro M2</li><li>Huawei P50 Pro</li><li>Xiaomi 13 Pro</li></ul><a href="catalog.php?cat=smartphones" class="more-link">+ More item</a></div>
-        <div class="cpthumbs">
-          <img src="assets/images/produit4.jpg" class="t-active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=55&q=80'"/>
-          <img src="assets/images/produit7.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=55&q=80'"/>
-          <img src="assets/images/produit5.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=55&q=80'"/>
+        <div class="cpimg"><img src="<?= htmlspecialchars($card['image']) ?>" alt="<?= htmlspecialchars($card['nom']) ?>" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=180&q=80'"/></div>
+        <div class="cpinfo">
+          <h4><?= htmlspecialchars($card['nom']) ?></h4>
+          <ul>
+            <?php foreach ($card['produits'] as $name): ?>
+              <li><?= htmlspecialchars($name ?: 'Produit disponible') ?></li>
+            <?php endforeach; ?>
+          </ul>
+          <a href="catalog.php?cat=<?= urlencode($card['slug']) ?>" class="more-link">Voir les produits</a>
         </div>
       </div>
-      <div class="cpcard">
-        <div class="cpimg"><img src="assets/images/produit1.jpg" alt="Laptop" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=180&q=80'"/></div>
-        <div class="cpinfo"><h4>Computer &amp; Laptops</h4><ul><li>Lenovo Yoga Pro 9i</li><li>Asus Vivobook 15</li><li>Dell Inspiron 15</li><li>HP Pavilion</li><li>MacBook Air M2</li></ul><a href="catalog.php?cat=laptops" class="more-link">+ More item</a></div>
-        <div class="cpthumbs">
-          <img src="assets/images/produit1.jpg" class="t-active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=55&q=80'"/>
-          <img src="assets/images/produit2.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=55&q=80'"/>
-          <img src="assets/images/produit10.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=55&q=80'"/>
-        </div>
-      </div>
-      <div class="cpcard">
-        <div class="cpimg"><img src="assets/images/produit3.jpg" alt="Accessoires" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=180&q=80'"/></div>
-        <div class="cpinfo"><h4>Electric Accessories</h4><ul><li>Sony WH-1000XM5</li><li>Cables &amp; Chargeurs</li><li>Coques &amp; Protections</li><li>Souris &amp; Claviers</li><li>Enceintes Bluetooth</li></ul><a href="catalog.php?cat=accessoires" class="more-link">+ More item</a></div>
-        <div class="cpthumbs">
-          <img src="assets/images/produit3.jpg" class="t-active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=55&q=80'"/>
-          <img src="assets/images/produit9.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=55&q=80'"/>
-          <img src="assets/images/produit3.jpg" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1583394838336-acd977736f90?w=55&q=80'"/>
-        </div>
-      </div>
+      <?php endforeach; ?>
+      <?php if (empty($catCards)): ?>
+      <div class="cpcard"><div class="cpinfo"><p>Aucune catégorie disponible pour le moment.</p></div></div>
+      <?php endif; ?>
     </div>
   </div>
 </section>
@@ -472,42 +479,27 @@ document.querySelectorAll('.cat-item').forEach(function(item){
     fetch('api/produits.php?action=liste&cat='+encodeURIComponent(item.dataset.slug)+'&limit=8')
       .then(function(r){ return r.json(); })
       .then(function(data){
+        var list = data.produits || data.items || data || [];
+        if (!Array.isArray(list)) {
+          list = [];
+        }
         grid.innerHTML = '';
-        (data.produits||[]).forEach(function(p){
-          var disc = (p.ancien_prix&&p.ancien_prix>p.prix) ? Math.round((1-p.prix/p.ancien_prix)*100) : 0;
+        list.forEach(function(p){
+          var disc = (p.ancien_prix && p.ancien_prix > p.prix) ? Math.round((1-p.prix/p.ancien_prix)*100) : 0;
           var c = document.createElement('div');
-          c.className = 'prod-card'; c.onclick = function(){ window.location='product.php?id='+p.id; };
-          c.innerHTML = '<span class="prod-badge">'+p.badge+'</span>'+(disc?'<span class="prod-disc">-'+disc+'%</span>':'')+
-            '<div class="prod-img"><img src="'+p.image+'" alt="'+p.nom+'" loading="lazy" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=300&q=80\'"/></div>'+
-            '<div class="prod-info"><p class="prod-name">'+p.nom+'</p>'+
-            '<div class="prod-prices"><span class="prod-price-new">XAF '+parseInt(p.prix).toLocaleString('fr-FR')+'</span>'+(p.ancien_prix?'<span class="prod-price-old">XAF '+parseInt(p.ancien_prix).toLocaleString('fr-FR')+'</span>':'')+'</div>'+
-            '<p class="prod-avail">Stock : <strong>'+p.stock+'</strong></p>'+
-            '<button class="btn-add" data-id="'+p.id+'" onclick="event.stopPropagation()">Ajouter au panier</button></div>';
+          c.className = 'prod-card'; c.onclick = function(){ window.location='product.php?id='+encodeURIComponent(p.id); };
+          c.innerHTML = '<span class="prod-badge">'+(p.badge||'')+'</span>'+(disc?'<span class="prod-disc">-'+disc+'%</span>':'')+
+            '<div class="prod-img"><img src="'+(p.image||'')+'" alt="'+(p.nom||'Produit')+'" loading="lazy" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=300&q=80\'"/></div>'+
+            '<div class="prod-info"><p class="prod-name">'+(p.nom||'Produit KF Tech')+'</p>'+ 
+            '<div class="prod-prices"><span class="prod-price-new">XAF '+parseInt(p.prix||0).toLocaleString('fr-FR')+'</span>'+(p.ancien_prix?'<span class="prod-price-old">XAF '+parseInt(p.ancien_prix).toLocaleString('fr-FR')+'</span>':'')+'</div>'+ 
+            '<p class="prod-avail">Stock : <strong>'+((p.stock !== undefined) ? p.stock : '0')+'</strong></p>'+ 
+            '<button class="btn-add" data-id="'+encodeURIComponent(p.id)+'" onclick="event.stopPropagation()">Ajouter au panier</button></div>';
           grid.appendChild(c);
         });
-        if (!data.produits||!data.produits.length) grid.innerHTML='<p style="padding:20px;color:#aaa">Aucun produit.</p>';
-      });
-  });
-});
+        if (!list.length) grid.innerHTML='<p style="padding:20px;color:#aaa">Aucun produit.</p>';
+      })
+      .catch(function(){ grid.innerHTML='<p style="padding:20px;color:#aaa">Erreur de chargement. Réessayez plus tard.</p>'; });
 
-// Brand tabs AJAX
-document.querySelectorAll('.btab').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('.btab').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    var grid = document.getElementById('smartGrid');
-    if (!grid) return;
-    var url = btn.dataset.b==='all' ? 'api/produits.php?action=liste&cat=smartphones&limit=4' : 'api/produits.php?action=recherche&q='+encodeURIComponent(btn.dataset.b);
-    fetch(url).then(function(r){ return r.json(); }).then(function(data){
-      grid.innerHTML = '';
-      (data.produits||[]).slice(0,4).forEach(function(p){
-        var c=document.createElement('div'); c.className='prod-card'; c.onclick=function(){ window.location='product.php?id='+p.id; };
-        c.innerHTML='<span class="prod-badge">'+p.badge+'</span><div class="prod-img"><img src="'+p.image+'" alt="'+p.nom+'" loading="lazy" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=300&q=80\'"/></div>'+
-          '<div class="prod-info"><p class="prod-name">'+p.nom+'</p><div class="prod-prices"><span class="prod-price-new">XAF '+parseInt(p.prix).toLocaleString('fr-FR')+'</span></div>'+
-          '<button class="btn-add" data-id="'+p.id+'" onclick="event.stopPropagation()">Ajouter au panier</button></div>';
-        grid.appendChild(c);
-      });
-    });
   });
 });
 

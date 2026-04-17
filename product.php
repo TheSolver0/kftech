@@ -22,19 +22,20 @@ if (empty($p) || isset($p['erreur'])) {
 }
 
 // ---- AVIS ----
-$avisList = $p['avis'] ?? [];
+$avisList = $p['avis'] ?? $p['reviews'] ?? [];
+if (!is_array($avisList)) {
+    $avisList = [];
+}
 
 // Moyenne et répartition calculées depuis les avis reçus
 $avgNote     = 0;
 $repartition = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
 
 if (!empty($avisList)) {
-    $avgNote = round(
-        array_sum(array_column($avisList, 'note')) / count($avisList),
-        1
-    );
+    $notes = array_column($avisList, 'note');
+    $avgNote = round(array_sum($notes) / count($notes), 1);
     foreach ($avisList as $a) {
-        $repartition[(int)$a['note']]++;
+        $repartition[(int)($a['note'] ?? 0)]++;
     }
 } else {
     // Fallback sur la note globale du produit si pas d'avis individuels
@@ -42,7 +43,10 @@ if (!empty($avisList)) {
 }
 
 // ---- SIMILAIRES ----
-$similaires = $p['similaires'] ?? [];
+$similaires = $p['similaires'] ?? $p['similar'] ?? [];
+if (!is_array($similaires)) {
+    $similaires = [];
+}
 
 // ---- SPECS ----
 $specs = [
@@ -110,7 +114,27 @@ include __DIR__ . '/includes/header.php';
 .stock-ok  { background:#2ecc71; }
 .stock-low { background:#f5a623; }
 .stock-out { background:#e63946; }
-.pi-desc { font-size:14px; color:#555; line-height:1.75; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.pi-desc {
+  font-size:14px;
+  color:#555;
+  line-height:1.75;
+  margin-bottom:12px;
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+  max-height: 140px;
+  overflow: hidden;
+  position: relative;
+}
+.pi-desc.expanded { max-height: none; }
+.show-more-desc {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--orange);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.show-more-desc:hover { text-decoration: underline; }
 
 .color-section { margin-bottom:18px; }
 .color-section label { font-size:13px; font-weight:700; color:var(--black); display:block; margin-bottom:8px; }
@@ -281,7 +305,10 @@ include __DIR__ . '/includes/header.php';
         <span style="color:#e63946"><strong>Rupture de stock</strong></span>
       <?php endif; ?>
     </div>
-    <p class="pi-desc"><?= nl2br(htmlspecialchars($p['description'])) ?></p>
+    <div class="pi-desc" id="productDescription">
+      <?= nl2br(htmlspecialchars($p['description'])) ?>
+    </div>
+    <a class="show-more-desc" id="toggleDescription" href="#">Voir plus</a>
 
     <!-- Couleurs -->
     <div class="color-section">
@@ -560,6 +587,18 @@ document.getElementById('submitAvis').addEventListener('click', function(){
 document.getElementById('addToCartBtn').addEventListener('click', function() {
   addToCart(PROD, qty);
 });
+
+// Toggle description
+var toggleDesc = document.getElementById('toggleDescription');
+if (toggleDesc) {
+  toggleDesc.addEventListener('click', function(e) {
+    e.preventDefault();
+    var desc = document.getElementById('productDescription');
+    if (!desc) return;
+    var expanded = desc.classList.toggle('expanded');
+    toggleDesc.textContent = expanded ? 'Voir moins' : 'Voir plus';
+  });
+}
 
 // Acheter maintenant — ouvre le mini-formulaire WhatsApp
 document.getElementById('buyNowBtn').addEventListener('click', function() {

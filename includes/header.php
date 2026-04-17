@@ -57,10 +57,9 @@ if (isset($_SESSION['user_id'])) {
     </div>
     <div class="topbar-right">
       <span><i class="fas fa-calendar-alt"></i> <?= date('d F, Y') ?></span>
-      <a href="#"><i class="fab fa-facebook-f"></i></a>
-      <a href="#"><i class="fab fa-twitter"></i></a>
-      <a href="#"><i class="fab fa-instagram"></i></a>
-      <a href="#"><i class="fab fa-youtube"></i></a>
+      <a href="https://www.facebook.com/share/1DHfKAHDLW/" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+      <a href="https://www.tiktok.com/@kf.tech.sarl?_r=1&_t=ZS-95awLw1bF7n" target="_blank" rel="noopener noreferrer"><i class="fab fa-tiktok"></i></a>
+      <a href="https://www.instagram.com/kftechsarl?igsh=MWY3NGFrMnRweTIzZg==" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
     </div>
   </div>
 </div>
@@ -112,24 +111,19 @@ if (isset($_SESSION['user_id'])) {
     <div class="nav-left">
       <button class="nav-menu-btn"><i class="fas fa-bars"></i></button>
       <ul class="nav-links">
-          <!-- LIEN ACCUEIL POUR MOBILE -->
         <li>
           <a href="index.php">
             <i class="fas fa-home"></i> Accueil
           </a>
         </li>
-        <li class="divider">|</li>
-        <!-- CATEGORIES -->
-        <?php foreach ($cats as $i => $c): ?>
+        <?php foreach ($cats as $c): ?>
           <li>
-            <a href="catalog.php?cat=<?= $c['slug'] ?>"
-               class="<?= (isset($activeCat) && $activeCat===$c['slug']) ? 'active-nav' : '' ?>">
-              <i class="<?= $c['icone'] ?>"></i> <?= htmlspecialchars($c['nom']) ?>
+            <a href="catalog.php?cat=<?= urlencode($c['slug']) ?>"
+               class="<?= (isset($activeCat) && $activeCat === $c['slug']) ? 'active-nav' : '' ?>"
+               title="<?= htmlspecialchars($c['nom']) ?>">
+              <i class="<?= categoryIconClass($c) ?>"></i> <?= htmlspecialchars($c['nom']) ?>
             </a>
           </li>
-          <?php if ($i < count($cats)-1): ?>
-            <li class="divider">|</li>
-          <?php endif; ?>
         <?php endforeach; ?>
       </ul>
     </div>
@@ -163,10 +157,15 @@ if (isset($_SESSION['user_id'])) {
   </div>
   <div class="drawer-footer">
     <div class="total-row">Total : <strong id="cartTotal">0 XAF</strong></div>
-    <button id="btnCommander" class="btn-primary w100"
-            style="width:100%;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border:none;cursor:pointer;font-family:Barlow,sans-serif;font-size:15px;font-weight:700">
-      <i class="fab fa-whatsapp"></i> Commander via WhatsApp
-    </button>
+    <div style="display:grid;gap:10px">
+      <button id="btnInvoice" class="btn-outline w100" style="width:100%;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border:1px solid var(--orange);background:#fff;color:var(--orange);font-family:Barlow,sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
+        <i class="fas fa-file-invoice"></i> Télécharger la facture
+      </button>
+      <button id="btnCommander" class="btn-primary w100"
+              style="width:100%;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border:none;cursor:pointer;font-family:Barlow,sans-serif;font-size:15px;font-weight:700">
+        <i class="fab fa-whatsapp"></i> Commander via WhatsApp
+      </button>
+    </div>
   </div>
 </div>
 

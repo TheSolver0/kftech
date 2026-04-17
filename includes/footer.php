@@ -1,4 +1,11 @@
 <?php // includes/footer.php ?>
+<?php
+require_once __DIR__ . '/../config/api.php';
+$footerCats = apiGet('/categories');
+if (!is_array($footerCats)) {
+    $footerCats = [];
+}
+?>
 <footer class="footer">
   <div class="container footer-grid">
     <div class="f-brand">
@@ -21,21 +28,18 @@
     <div class="f-links">
       <h4>Catégories</h4>
       <ul>
-        <li><a href="catalog.php?cat=laptops">Laptops &amp; Desktops</a></li>
-        <li><a href="catalog.php?cat=smartphones">Smartphones</a></li>
-        <li><a href="catalog.php?cat=tablettes">Tablettes</a></li>
-        <li><a href="catalog.php?cat=gaming">Gaming &amp; Fun</a></li>
-        <li><a href="catalog.php?cat=tv-audio">TV &amp; Audio</a></li>
-        <li><a href="catalog.php?cat=accessoires">Accessoires</a></li>
+        <?php foreach ($footerCats as $cat): ?>
+          <li><a href="catalog.php?cat=<?= urlencode($cat['slug'] ?? '') ?>"><?= htmlspecialchars($cat['nom'] ?? 'Catégorie') ?></a></li>
+        <?php endforeach; ?>
       </ul>
     </div>
     <div class="f-links">
       <h4>Informations</h4>
       <ul>
-        <li><a href="#">Service client</a></li>
-        <li><a href="#">Termes &amp; Conditions</a></li>
-        <li><a href="#">À propos</a></li>
-        <li><a href="#">Confidentialité</a></li>
+        <li><a href="service-client.php">Service client</a></li>
+        <li><a href="termes.php">Termes &amp; Conditions</a></li>
+        <li><a href="apropos.php">À propos</a></li>
+        <li><a href="confidentialite.php">Confidentialité</a></li>
       </ul>
     </div>
   </div>
@@ -44,11 +48,9 @@
     <div class="container fb-inner">
       <p>© <?= date('Y') ?> <span>KF-Tech Sarl</span>. Tous droits réservés.</p>
       <div class="socials">
-        <a href="#"><i class="fab fa-facebook-f"></i></a>
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-instagram"></i></a>
-        <a href="#"><i class="fab fa-youtube"></i></a>
-        <a href="#"><i class="fab fa-pinterest-p"></i></a>
+        <a href="https://www.facebook.com/share/1DHfKAHDLW/" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.tiktok.com/@kf.tech.sarl?_r=1&_t=ZS-95awLw1bF7n" target="_blank" rel="noopener noreferrer"><i class="fab fa-tiktok"></i></a>
+        <a href="https://www.instagram.com/kftechsarl?igsh=MWY3NGFrMnRweTIzZg==" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
       </div>
     </div>
   </div>
