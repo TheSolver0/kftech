@@ -91,10 +91,32 @@ if (isset($_SESSION['user_id'])) {
     <div class="header-actions">
       <div class="action-item currency">XAF <i class="fas fa-chevron-down"></i></div>
       <div class="action-item lang">Français <i class="fas fa-chevron-down"></i></div>
-      <a href="login.php" class="action-icon"
-         title="<?= $user ? htmlspecialchars($user['prenom'].' '.$user['nom']) : 'Connexion' ?>">
-        <i class="fas fa-user"></i>
-      </a>
+      <div class="user-dropdown-wrapper">
+        <button class="action-icon user-dropdown-btn" id="userDropdownBtn"
+                title="<?= $user ? htmlspecialchars($user['prenom'].' '.$user['nom']) : 'Connexion' ?>">
+          <i class="fas fa-user-circle"></i>
+        </button>
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+          <?php if ($user): ?>
+            <div class="dropdown-header">
+              <strong><?= htmlspecialchars($user['prenom'].' '.$user['nom']) ?></strong>
+            </div>
+            <a href="compte.php" class="dropdown-item">
+              <i class="fas fa-user"></i> Mon Compte
+            </a>
+            <a href="api/auth.php?action=deconnexion" class="dropdown-item">
+              <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </a>
+          <?php else: ?>
+            <a href="login.php" class="dropdown-item">
+              <i class="fas fa-sign-in-alt"></i> Connexion
+            </a>
+            <a href="login.php?mode=signup" class="dropdown-item">
+              <i class="fas fa-user-plus"></i> Créer un Compte
+            </a>
+          <?php endif; ?>
+        </div>
+      </div>
       <a href="#" class="action-icon">
         <i class="fas fa-heart"></i><span class="badge" id="wishBadge">0</span>
       </a>
@@ -107,45 +129,114 @@ if (isset($_SESSION['user_id'])) {
 
 <!-- NAVBAR -->
 <nav class="navbar" id="mainNav">
-  <div class="container nav-inner">
-    <div class="nav-left">
-      <button class="nav-menu-btn"><i class="fas fa-bars"></i></button>
-      <ul class="nav-links">
-        <li>
-          <a href="index.php">
-            <i class="fas fa-home"></i> Accueil
-          </a>
-        </li>
-        <?php foreach ($cats as $c): ?>
+  <!-- NAVBAR MOBILE (visible sur mobile, caché sur desktop) -->
+  <div class="navbar-mobile">
+    <button class="nav-menu-btn"><i class="fas fa-bars"></i></button>
+    <a href="index.php" class="navbar-mobile-logo">
+      <img src="assets/images/logo.png" alt="KF Tech" class="navbar-mobile-brand" />
+      <span class="logo-kf">KF</span><span class="logo-tech">TECH</span>
+    </a>
+    <div class="navbar-mobile-actions">
+      <div class="user-dropdown-wrapper-mobile">
+        <button class="nav-action-icon user-dropdown-btn-mobile" id="userDropdownBtnMobile">
+          <i class="fas fa-circle-user"></i>
+        </button>
+        <div class="user-dropdown-menu-mobile" id="userDropdownMenuMobile">
+          <?php if ($user): ?>
+            <div class="dropdown-header">
+              <strong><?= htmlspecialchars($user['prenom'].' '.$user['nom']) ?></strong>
+            </div>
+            <a href="compte.php" class="dropdown-item">
+              <i class="fas fa-user"></i> Mon Compte
+            </a>
+            <a href="api/auth.php?action=deconnexion" class="dropdown-item">
+              <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </a>
+          <?php else: ?>
+            <a href="login.php" class="dropdown-item">
+              <i class="fas fa-sign-in-alt"></i> Connexion
+            </a>
+            <a href="login.php?mode=signup" class="dropdown-item">
+              <i class="fas fa-user-plus"></i> Créer un Compte
+            </a>
+          <?php endif; ?>
+        </div>
+      </div>
+      <a href="#" class="nav-action-icon" id="wishBtnMobile">
+        <i class="fas fa-heart"></i>
+      </a>
+      <a href="#" class="nav-action-icon" id="cartBtnMobile">
+        <i class="fas fa-shopping-cart"></i><span class="nav-badge" id="cartBadgeMobile">0</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- NAVBAR DESKTOP (caché sur mobile, visible sur desktop) -->
+  <div class="navbar-desktop">
+    <div class="container nav-inner">
+      <div class="nav-left">
+        <ul class="nav-links">
           <li>
-            <a href="catalog.php?cat=<?= urlencode($c['slug']) ?>"
-               class="<?= (isset($activeCat) && $activeCat === $c['slug']) ? 'active-nav' : '' ?>"
-               title="<?= htmlspecialchars($c['nom']) ?>">
-              <i class="<?= categoryIconClass($c) ?>"></i> <?= htmlspecialchars($c['nom']) ?>
+            <a href="index.php">
+              <i class="fas fa-home"></i> Accueil
             </a>
           </li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
-    <?php if ($user): ?>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="color:#ccc;font-size:13px">
-          Bonjour, <strong style="color:var(--orange)"><?= htmlspecialchars($user['prenom']) ?></strong>
-        </span>
-        <a href="compte.php" class="btn-connexion" style="background:#555">
-          Mon compte
-        </a>
-        <a href="api/auth.php?action=deconnexion" class="btn-connexion" style="background:#555">
-          Déconnexion
-        </a>
+          <?php foreach ($cats as $c): ?>
+            <li>
+              <a href="catalog.php?cat=<?= urlencode($c['slug']) ?>"
+                 class="<?= (isset($activeCat) && $activeCat === $c['slug']) ? 'active-nav' : '' ?>"
+                 title="<?= htmlspecialchars($c['nom']) ?>">
+                <i class="<?= categoryIconClass($c) ?>"></i> <?= htmlspecialchars($c['nom']) ?>
+              </a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
       </div>
-    <?php else: ?>
-      <a href="login.php" class="btn-connexion">Connexion</a>
-    <?php endif; ?>
+    </div>
+    <!-- Burger menu caché (on le garde pour le JS mais on le montre au mobile) -->
+    <button class="nav-menu-btn" style="display:none;"><i class="fas fa-bars"></i></button>
   </div>
+
+  <!-- MENU MOBILE DÉROULANT -->
+  <ul class="nav-links-mobile" id="navLinksMobile">
+    <li>
+      <a href="index.php">
+        <i class="fas fa-home"></i> Accueil
+      </a>
+    </li>
+    <?php foreach ($cats as $c): ?>
+      <li>
+        <a href="catalog.php?cat=<?= urlencode($c['slug']) ?>"
+           class="<?= (isset($activeCat) && $activeCat === $c['slug']) ? 'active-nav' : '' ?>"
+           title="<?= htmlspecialchars($c['nom']) ?>">
+          <i class="<?= categoryIconClass($c) ?>"></i> <?= htmlspecialchars($c['nom']) ?>
+        </a>
+      </li>
+    <?php endforeach; ?>
+  </ul>
 </nav>
 
-<!-- CART DRAWER -->
+<!-- MOBILE SEARCH BAR (visible only on mobile) -->
+<div class="mobile-search">
+  <div class="container">
+    <div class="search-bar">
+      <div class="search-category">
+        <select id="searchCatSelectMobile">
+          <option value="">Toutes les Catégories</option>
+          <?php foreach ($cats as $c): ?>
+            <option value="<?= $c['slug'] ?>"
+              <?= (isset($activeCat) && $activeCat === $c['slug']) ? 'selected' : '' ?>>
+              <?= htmlspecialchars($c['nom']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <input type="text" id="searchInputMobile" placeholder="Rechercher des produits..."
+             value="<?= htmlspecialchars($_GET['q'] ?? '') ?>"/>
+      <button class="btn-search" id="searchBtnMobile"><i class="fas fa-search"></i></button>
+    </div>
+  </div>
+</div>
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-drawer" id="cartDrawer">
   <div class="drawer-header">
@@ -158,9 +249,6 @@ if (isset($_SESSION['user_id'])) {
   <div class="drawer-footer">
     <div class="total-row">Total : <strong id="cartTotal">0 XAF</strong></div>
     <div style="display:grid;gap:10px">
-      <button id="btnInvoice" class="btn-outline w100" style="width:100%;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border:1px solid var(--orange);background:#fff;color:var(--orange);font-family:Barlow,sans-serif;font-size:15px;font-weight:700;cursor:pointer;">
-        <i class="fas fa-file-invoice"></i> Télécharger la facture
-      </button>
       <button id="btnCommander" class="btn-primary w100"
               style="width:100%;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border:none;cursor:pointer;font-family:Barlow,sans-serif;font-size:15px;font-weight:700">
         <i class="fab fa-whatsapp"></i> Commander via WhatsApp

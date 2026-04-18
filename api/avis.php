@@ -29,10 +29,21 @@ $ctx = stream_context_create(['http' => [
     'ignore_errors' => true,
 ]]);
 
-$raw  = @file_get_contents(APIURL . 'reviews', false, $ctx);
+$raw  = @file_get_contents(rtrim(APIURL, '/') . '/reviews', false, $ctx);
 $data = $raw ? json_decode($raw, true) : null;
 
+$success = false;
 if ($data && !isset($data['erreur'])) {
+    if (isset($data['succes']) && $data['succes']) {
+        $success = true;
+    } elseif (isset($data['success']) && $data['success']) {
+        $success = true;
+    } elseif (isset($data['status']) && in_array(strtolower($data['status']), ['ok', 'success', 'created'], true)) {
+        $success = true;
+    }
+}
+
+if ($success) {
     echo json_encode(['succes' => true]);
 } else {
     http_response_code(500);

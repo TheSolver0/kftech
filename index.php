@@ -606,6 +606,29 @@ if (heroBtnVoir) heroBtnVoir.addEventListener('click', function(e){ e.preventDef
   if(backBtn) backBtn.addEventListener('click', function(e){ e.preventDefault(); window.scrollTo({top:0,behavior:'smooth'}); });
   window.addEventListener('scroll', function(){ var nav=document.getElementById('mainNav'); if(nav) nav.style.boxShadow=window.scrollY>100?'0 4px 12px rgba(0,0,0,.15)':'none'; });
 
+  function moveFeaturesOnMobile() {
+    var features = document.querySelector('.features');
+    var help = document.querySelector('.help-section');
+    if (!features || !help) return;
+    var originalParent = features.__originalParent || (features.__originalParent = features.parentNode);
+    var originalNext = features.__originalNext || (features.__originalNext = features.nextElementSibling);
+    if (window.innerWidth <= 900) {
+      if (help.previousElementSibling !== features) {
+        help.parentNode.insertBefore(features, help);
+      }
+    } else if (originalParent) {
+      if (originalParent !== features.parentNode) {
+        if (originalNext && originalNext.parentNode === originalParent) {
+          originalParent.insertBefore(features, originalNext);
+        } else {
+          originalParent.appendChild(features);
+        }
+      }
+    }
+  }
+  moveFeaturesOnMobile();
+  window.addEventListener('resize', moveFeaturesOnMobile);
+
   // Toast déconnexion
   var urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('msg') === 'deconnecte') {
@@ -620,11 +643,28 @@ if (heroBtnVoir) heroBtnVoir.addEventListener('click', function(e){ e.preventDef
     // Nettoyer l'URL sans recharger
     history.replaceState(null, '', 'index.php');
   }
+
 })();
+
+document.addEventListener('DOMContentLoaded', function() {
+  var helpToggle = document.getElementById('helpToggle');
+  var helpSection = document.querySelector('.help-section');
+  if (helpToggle && helpSection) {
+    helpToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      var isOpen = helpSection.classList.toggle('open');
+      helpToggle.setAttribute('aria-expanded', isOpen);
+      helpToggle.textContent = isOpen ? 'Fermer l\'aide' : 'Besoin d\'aide ?';
+    });
+  }
+});
 </script>
 
 <!-- SECTION ASSISTANCE -->
 <section class="help-section pad">
+  <div class="container">
+    <button id="helpToggle" class="help-toggle" type="button" aria-expanded="false">Besoin d'aide ?</button>
+  </div>
   <div class="container help-grid">
     <div class="help-info">
       <span class="section-label">Besoin d'aide ?</span>

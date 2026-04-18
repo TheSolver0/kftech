@@ -4,12 +4,6 @@ header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../config/api.php';
 
-function jsonResponse(mixed $data, int $code = 200): void {
-    http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
 $action = $_GET['action'] ?? 'liste';
 
 switch ($action) {

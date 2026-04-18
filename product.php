@@ -49,11 +49,41 @@ if (!is_array($similaires)) {
 }
 
 // ---- SPECS ----
+function guessBrand(string $name): string {
+    $name = strtolower($name);
+    $brands = [
+        'samsung' => ['samsung', 'galaxy'],
+        'apple'   => ['iphone', 'ipad', 'macbook', 'apple'],
+        'sony'    => ['ps5', 'playstation', 'sony'],
+        'xbox'    => ['xbox'],
+        'nvidia'  => ['nvidia', 'rtx'],
+        'lenovo'  => ['lenovo'],
+        'asus'    => ['asus'],
+        'hp'      => ['hp', 'pavilion', 'omen'],
+        'dell'    => ['dell'],
+        'xiaomi'  => ['xiaomi'],
+        'huawei'  => ['huawei'],
+        'oneplus' => ['oneplus'],
+        'realme'  => ['realme'],
+    ];
+    foreach ($brands as $brand => $keywords) {
+        foreach ($keywords as $keyword) {
+            if (strpos($name, $keyword) !== false) {
+                return ucfirst($brand);
+            }
+        }
+    }
+    if (preg_match('/\b(ps[34]|playstation)\b/i', $name)) {
+        return 'Sony';
+    }
+    return '—';
+}
+
 $specs = [
-    'Marque'    => $p['marque']        ?: '—',
+    'Marque'    => $p['marque'] ?: (guessBrand($p['nom'] ?? '') ?: '—'),
     'Catégorie' => $p['categorie_nom'] ?: '—',
     'Stock'     => ($p['stock'] ?? 0) . ' unités',
-    'Badge'     => $p['badge']         ?: '—',
+    'Badge'     => $p['badge'] ?: '—',
     'Note'      => $avgNote . '/5',
 ];
 
@@ -451,12 +481,12 @@ include __DIR__ . '/includes/header.php';
       <?php foreach ($avisList as $a): ?>
       <div class="avis-item">
         <div class="avis-head">
-          <span class="avis-name"><?= htmlspecialchars($a['nom_auteur']) ?></span>
-          <span class="avis-date"><?= date('d M Y', strtotime($a['created_at'])) ?></span>
+          <span class="avis-name"><?= htmlspecialchars($a['nom_auteur'] ?? 'Client') ?></span>
+          <span class="avis-date"><?= htmlspecialchars(isset($a['created_at']) ? date('d M Y', strtotime($a['created_at'])) : '') ?></span>
         </div>
-        <div class="avis-stars"><?= stars($a['note']) ?></div>
-        <p class="avis-txt"><?= nl2br(htmlspecialchars($a['commentaire'])) ?></p>
-        <?php if ($a['verifie']): ?>
+        <div class="avis-stars"><?= stars((float)($a['note'] ?? 0)) ?></div>
+        <p class="avis-txt"><?= nl2br(htmlspecialchars($a['commentaire'] ?? '')) ?></p>
+        <?php if (!empty($a['verifie'])): ?>
           <p class="avis-verifie"><i class="fas fa-check-circle"></i> Achat vérifié</p>
         <?php endif; ?>
       </div>
@@ -527,92 +557,95 @@ function switchImg(thumb, src) {
 // Quantité
 var qty = 1;
 document.getElementById('qMinus').addEventListener('click', function(){ if(qty>1){ qty--; document.getElementById('qVal').value=qty; } });
-document.getElementById('qPlus').addEventListener('click', function(){ if(qty<PROD.stock){ qty++; document.getElementById('qVal').value=qty; } });
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('qPlus').addEventListener('click', function(){ if(qty<PROD.stock){ qty++; document.getElementById('qVal').value=qty; } });
 
-// Couleurs
-document.querySelectorAll('.col-opt').forEach(function(o){
-  o.addEventListener('click', function(){
-    document.querySelectorAll('.col-opt').forEach(function(x){ x.classList.remove('active'); });
-    o.classList.add('active');
+  // Couleurs
+  document.querySelectorAll('.col-opt').forEach(function(o){
+    o.addEventListener('click', function(){
+      document.querySelectorAll('.col-opt').forEach(function(x){ x.classList.remove('active'); });
+      o.classList.add('active');
+    });
   });
-});
 
-// Tabs
-document.querySelectorAll('.p-tab').forEach(function(tab){
-  tab.addEventListener('click', function(){
-    document.querySelectorAll('.p-tab').forEach(function(t){ t.classList.remove('active'); });
-    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
-    tab.classList.add('active');
-    document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+  // Tabs
+  document.querySelectorAll('.p-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.p-tab').forEach(function(t){ t.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    });
   });
-});
 
-// Stars input avis
-var selectedStar = 0;
-document.querySelectorAll('#starsInput i').forEach(function(star){
-  star.addEventListener('mouseover', function(){
-    var v = parseInt(star.dataset.val);
-    document.querySelectorAll('#starsInput i').forEach(function(s,i){ s.classList.toggle('active', i<v); });
+  // Stars input avis
+  var selectedStar = 0;
+  document.querySelectorAll('#starsInput i').forEach(function(star){
+    star.addEventListener('mouseover', function(){
+      var v = parseInt(star.dataset.val);
+      document.querySelectorAll('#starsInput i').forEach(function(s,i){ s.classList.toggle('active', i<v); });
+    });
+    star.addEventListener('click', function(){
+      selectedStar = parseInt(star.dataset.val);
+    });
   });
-  star.addEventListener('click', function(){
-    selectedStar = parseInt(star.dataset.val);
+  document.getElementById('starsInput').addEventListener('mouseleave', function(){
+    document.querySelectorAll('#starsInput i').forEach(function(s,i){ s.classList.toggle('active', i<selectedStar); });
   });
-});
-document.getElementById('starsInput').addEventListener('mouseleave', function(){
-  document.querySelectorAll('#starsInput i').forEach(function(s,i){ s.classList.toggle('active', i<selectedStar); });
-});
 
-// Soumettre avis
-document.getElementById('submitAvis').addEventListener('click', function(){
-  var nom = document.getElementById('avisNom').value.trim();
-  var txt = document.getElementById('avisTxt').value.trim();
-  if (!selectedStar) { alert('Veuillez sélectionner une note.'); return; }
-  if (!nom || !txt)  { alert('Veuillez remplir tous les champs.'); return; }
+  // Soumettre avis
+  document.getElementById('submitAvis').addEventListener('click', function(){
+    var nom = document.getElementById('avisNom').value.trim();
+    var txt = document.getElementById('avisTxt').value.trim();
+    if (!selectedStar) { alert('Veuillez sélectionner une note.'); return; }
+    if (!nom || !txt)  { alert('Veuillez remplir tous les champs.'); return; }
 
-  fetch('api/avis.php', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ produit_id: PROD.id, nom_auteur: nom, note: selectedStar, commentaire: txt })
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if (d.succes) { location.reload(); }
-    else { alert(d.message || 'Erreur.'); }
-  })
-  .catch(function(){ alert('Erreur réseau.'); });
-});
-
-
-// Ajouter au panier — utilise les fonctions de main.js
-document.getElementById('addToCartBtn').addEventListener('click', function() {
-  addToCart(PROD, qty);
-});
-
-// Toggle description
-var toggleDesc = document.getElementById('toggleDescription');
-if (toggleDesc) {
-  toggleDesc.addEventListener('click', function(e) {
-    e.preventDefault();
-    var desc = document.getElementById('productDescription');
-    if (!desc) return;
-    var expanded = desc.classList.toggle('expanded');
-    toggleDesc.textContent = expanded ? 'Voir moins' : 'Voir plus';
+    fetch('api/avis.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ produit_id: PROD.id, nom_auteur: nom, note: selectedStar, commentaire: txt })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.succes) { location.reload(); }
+      else { alert(d.message || 'Erreur.'); }
+    })
+    .catch(function(){ alert('Erreur réseau.'); });
   });
-}
 
-// Acheter maintenant — ouvre le mini-formulaire WhatsApp
-document.getElementById('buyNowBtn').addEventListener('click', function() {
-  acheterMaintenant(PROD, qty);
+  // Ajouter au panier — utilise les fonctions de main.js
+  document.getElementById('addToCartBtn').addEventListener('click', function() {
+    addToCart(PROD, qty);
+  });
+
+  // Toggle description
+  var toggleDesc = document.getElementById('toggleDescription');
+  if (toggleDesc) {
+    toggleDesc.addEventListener('click', function(e) {
+      e.preventDefault();
+      var desc = document.getElementById('productDescription');
+      if (!desc) return;
+      var expanded = desc.classList.toggle('expanded');
+      toggleDesc.textContent = expanded ? 'Voir moins' : 'Voir plus';
+    });
+  }
+
+  // Acheter maintenant — ouvre le mini-formulaire WhatsApp
+  document.getElementById('buyNowBtn').addEventListener('click', function() {
+    acheterMaintenant(PROD, qty);
+  });
+
+  // Boutons "Ajouter au panier" des produits similaires — déjà gérés par main.js
+  // Retirer les onclick inline qui causent des conflits
+  document.querySelectorAll('.btn-add').forEach(function(btn) {
+    btn.removeAttribute('onclick');
+  });
+
+  // Init badge panier au chargement
+  if (typeof updateCartUI === 'function') {
+    updateCartUI();
+  }
 });
-
-// Boutons "Ajouter au panier" des produits similaires — déjà gérés par main.js
-// Retirer les onclick inline qui causent des conflits
-document.querySelectorAll('.btn-add').forEach(function(btn) {
-  btn.removeAttribute('onclick');
-});
-
-// Init badge panier au chargement
-updateCartUI();
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

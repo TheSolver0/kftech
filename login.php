@@ -36,7 +36,7 @@
     .panel-footer p { color:rgba(255,255,255,.6); font-size:12px; }
     .panel-footer span { color:#fff; font-weight:700; }
 
-    .right-panel { width:480px; background:#fff; display:flex; flex-direction:column; justify-content:center; padding:48px 44px; overflow-y:auto; }
+    .right-panel { width:480px; background:#fff; display:flex; flex-direction:column; justify-content:center; padding:48px 44px; overflow-y:auto; min-height:100vh; height:100vh; -webkit-overflow-scrolling:touch; }
     .back-link { display:inline-flex; align-items:center; gap:6px; color:#888; font-size:13px; text-decoration:none; margin-bottom:32px; transition:color .2s; }
     .back-link:hover { color:var(--orange); }
     .auth-tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:28px; }
