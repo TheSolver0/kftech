@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /index.php
+Allow: /catalog.php
+Allow: /product.php
+Allow: /assets/
+
+Disallow: /admin/
+Disallow: /config/
+Disallow: /api/auth.php
+Disallow: /api/favoris.php
+Disallow: /*.sql$
+
+Sitemap: https://kftech237.com/sitemap.xml

@@ -221,7 +221,7 @@ setTimeout(function() {
 </section>
 
 <!-- FEATURES -->
-<section class="features">
+<section id="featuresSection" class="features">
   <div class="container features-grid">
     <div class="feat"><i class="fas fa-truck"></i><div><h4>Livraison A Domicile</h4><p>Livraison chez vous</p></div></div>
     <div class="feat"><i class="fas fa-lock"></i><div><h4>Paiement Securise</h4><p>Paiement sure</p></div></div>
@@ -657,6 +657,28 @@ document.addEventListener('DOMContentLoaded', function() {
       helpToggle.textContent = isOpen ? 'Fermer l\'aide' : 'Besoin d\'aide ?';
     });
   }
+
+  var featuresSection = document.getElementById('featuresSection');
+  var originalFeaturesParent = featuresSection ? featuresSection.parentNode : null;
+  var originalFeaturesNext = featuresSection ? featuresSection.nextElementSibling : null;
+
+  function relocateFeatures() {
+    if (!featuresSection || !helpSection) return;
+    if (window.innerWidth <= 768) {
+      if (helpSection.previousElementSibling !== featuresSection) {
+        helpSection.parentNode.insertBefore(featuresSection, helpSection);
+      }
+    } else {
+      if (originalFeaturesParent && originalFeaturesNext && originalFeaturesParent !== featuresSection.parentNode) {
+        originalFeaturesParent.insertBefore(featuresSection, originalFeaturesNext);
+      } else if (originalFeaturesParent && !originalFeaturesNext && originalFeaturesParent !== featuresSection.parentNode) {
+        originalFeaturesParent.appendChild(featuresSection);
+      }
+    }
+  }
+
+  relocateFeatures();
+  window.addEventListener('resize', relocateFeatures);
 });
 </script>
 

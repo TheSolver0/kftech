@@ -1,0 +1,43 @@
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": "https://kftech237.com",
+  "name": "KF Tech - Boutique Informatique Douala",
+  "image": "https://kftech237.com/assets/images/logo.png",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://kftech237.com/assets/images/logo.png",
+    "width": 200,
+    "height": 200
+  },
+  "description": "KF Tech, votre boutique informatique à Douala. Laptops, smartphones, tablettes, accessoires électroniques au meilleur prix.",
+  "url": "https://kftech237.com",
+  "telephone": "+237651271617",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "Customer Support",
+    "telephone": "+237651271617",
+    "url": "https://wa.me/237651271617"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Douala, Rond point Deido",
+    "addressLocality": "Douala",
+    "addressRegion": "Littoral",
+    "postalCode": "",
+    "addressCountry": "CM"
+  },
+  "priceRange": "$$",
+  "areaServed": "CM",
+  "sameAs": [
+    "https://www.facebook.com/share/1DHfKAHDLW/",
+    "https://www.tiktok.com/@kf.tech.sarl?_r=1&_t=ZS-95awLw1bF7n",
+    "https://www.instagram.com/kftechsarl?igsh=MWY3NGFrMnRweTIzZg=="
+  ],
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "opens": "08:00",
+    "closes": "18:00"
+  }
+}

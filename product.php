@@ -102,6 +102,33 @@ function stars(float $n): string {
     return str_repeat('★', $n) . str_repeat('☆', 5 - $n);
 }
 
+// Images du produit : priorité à l'API images, puis fallback sur image principale.
+$productImages = [];
+if (!empty($p['images']) && is_array($p['images'])) {
+    foreach ($p['images'] as $img) {
+        if (is_string($img) && trim($img) !== '') {
+            $productImages[] = trim($img);
+        } elseif (is_array($img)) {
+            if (!empty($img['url'])) {
+                $productImages[] = trim($img['url']);
+            } elseif (!empty($img['src'])) {
+                $productImages[] = trim($img['src']);
+            } elseif (!empty($img['image'])) {
+                $productImages[] = trim($img['image']);
+            }
+        }
+    }
+}
+if (empty($productImages) && !empty($p['image'])) {
+    $productImages[] = trim($p['image']);
+}
+$productImages = array_values(array_filter(array_slice($productImages, 0, 5), function($u) {
+    return $u !== '';
+}));
+if (empty($productImages) && !empty($p['image'])) {
+    $productImages[] = trim($p['image']);
+}
+
 include __DIR__ . '/includes/header.php';
 ?>
 <style>
@@ -291,15 +318,14 @@ include __DIR__ . '/includes/header.php';
         <span class="g-badge-new"><?= htmlspecialchars($p['badge']) ?></span>
         <?php if ($disc): ?><span class="g-badge-disc">-<?= $disc ?>%</span><?php endif; ?>
       </div>
-      <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" id="mainImg"/>
+      <img src="<?= htmlspecialchars($productImages[0] ?? $p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" id="mainImg"/>
     </div>
     <div class="gallery-thumbs">
-      <!-- 3 thumbnails (même image pour l'instant, remplacer par images multiples) -->
-      <?php for ($i = 0; $i < 3; $i++): ?>
-      <div class="g-thumb <?= $i===0 ? 'active' : '' ?>" onclick="switchImg(this, '<?= htmlspecialchars($p['image']) ?>')">
-        <img src="<?= htmlspecialchars($p['image']) ?>" alt="Vue <?= $i+1 ?>"/>
+      <?php foreach ($productImages as $i => $imgSrc): ?>
+      <div class="g-thumb <?= $i === 0 ? 'active' : '' ?>" onclick="switchImg(this, '<?= htmlspecialchars($imgSrc) ?>')">
+        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Vue <?= $i + 1 ?>"/>
       </div>
-      <?php endfor; ?>
+      <?php endforeach; ?>
     </div>
   </div>
 
@@ -543,7 +569,7 @@ var PROD = {
   id:    <?= $p['id'] ?>,
   nom:   <?= json_encode($p['nom']) ?>,
   prix:  <?= $p['prix'] ?>,
-  image: <?= json_encode($p['image']) ?>,
+  image: <?= json_encode($productImages[0] ?? $p['image']) ?>,
   stock: <?= $p['stock'] ?>
 };
 

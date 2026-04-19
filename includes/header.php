@@ -35,9 +35,64 @@ if (isset($_SESSION['user_id'])) {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="description" content="<?= htmlspecialchars($pageDesc) ?>"/>
+  <meta name="keywords" content="KF Tech, électronique, laptop, smartphone, tablette, informatique, Douala"/>
+  <meta name="author" content="KF Tech SARL"/>
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
+  <meta name="theme-color" content="#FF6B35"/>
   <title><?= htmlspecialchars($pageTitle) ?></title>
+  
+  <!-- Favicon pour Google et navigateurs -->
   <link rel="icon" type="image/png" href="assets/images/logo.png" />
   <link rel="shortcut icon" type="image/png" href="assets/images/logo.png" />
+  <link rel="apple-touch-icon" href="assets/images/logo.png" />
+  
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  
+  <!-- Open Graph pour partage social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://kftech237.com" />
+  <meta property="og:title" content="<?= htmlspecialchars($pageTitle) ?>" />
+  <meta property="og:description" content="<?= htmlspecialchars($pageDesc) ?>" />
+  <meta property="og:image" content="https://kftech237.com/assets/images/logo.png" />
+  
+  <!-- Twitter Card -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="<?= htmlspecialchars($pageTitle) ?>" />
+  <meta property="twitter:description" content="<?= htmlspecialchars($pageDesc) ?>" />
+  <meta property="twitter:image" content="https://kftech237.com/assets/images/logo.png" />
+  
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "KF Tech - Boutique Informatique Douala",
+    "url": "https://kftech237.com",
+    "logo": "https://kftech237.com/assets/images/logo.png",
+    "image": "https://kftech237.com/assets/images/logo.png",
+    "description": "<?= htmlspecialchars($pageDesc) ?>",
+    "telephone": "+237651271617",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Douala, Rond point Deido",
+      "addressLocality": "Douala",
+      "addressCountry": "CM"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Support",
+      "telephone": "+237651271617",
+      "url": "https://wa.me/237651271617"
+    },
+    "sameAs": [
+      "https://www.facebook.com/share/1DHfKAHDLW/",
+      "https://www.tiktok.com/@kf.tech.sarl?_r=1&_t=ZS-95awLw1bF7n",
+      "https://www.instagram.com/kftechsarl?igsh=MWY3NGFrMnRweTIzZg=="
+    ]
+  }
+  </script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>

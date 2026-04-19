@@ -8,8 +8,6 @@ $q       = trim($_GET['q']      ?? '');
 $marque  = trim($_GET['marque'] ?? '');
 $tri     = $_GET['tri']         ?? 'recent';
 $page    = max(1, (int)($_GET['page'] ?? 1));
-$pmin    = (int)($_GET['pmin']  ?? 0) ?: null;
-$pmax    = (int)($_GET['pmax']  ?? 0) ?: null;
 $limit   = 12;
 
 // ============================================================
@@ -34,8 +32,6 @@ $params = array_filter([
     'cat'    => $catSlug ?: null,
     'q'      => $q       ?: null,
     'marque' => $marque  ?: null,
-    'pmin'   => $pmin,
-    'pmax'   => $pmax,
     'tri'    => $tri,
     'page'   => $page,
     'limit'  => $limit,
@@ -99,10 +95,6 @@ include __DIR__ . '/includes/header.php';
 .marque-item { display:flex; align-items:center; gap:8px; font-size:13px; color:#555; cursor:pointer; }
 .marque-item input { accent-color:var(--orange); }
 .marque-item:hover { color:var(--orange); }
-
-.prix-range { display:flex; gap:8px; align-items:center; margin-top:8px; }
-.prix-range input { width:90px; height:36px; border:1px solid var(--border); border-radius:6px; padding:0 8px; font-size:13px; outline:none; }
-.prix-range input:focus { border-color:var(--orange); }
 .btn-filter-apply { width:100%; height:38px; background:var(--orange); color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; margin-top:10px; transition:background .2s; font-family:'Barlow',sans-serif; }
 .btn-filter-apply:hover { background:var(--orange-dark); }
 .btn-reset { width:100%; height:34px; background:#fff; color:#888; border:1px solid var(--border); border-radius:6px; font-size:12px; cursor:pointer; margin-top:6px; font-family:'Barlow',sans-serif; }
@@ -229,23 +221,6 @@ include __DIR__ . '/includes/header.php';
         </form>
       </div>
       <?php endif; ?>
-
-      <!-- Fourchette de prix -->
-      <div class="sidebar-box">
-        <h4>Prix (XAF)</h4>
-        <form method="GET" action="catalog.php" id="prixForm">
-          <?php if ($catSlug): ?><input type="hidden" name="cat" value="<?= htmlspecialchars($catSlug) ?>"><?php endif; ?>
-          <?php if ($q): ?><input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>"><?php endif; ?>
-          <?php if ($marque): ?><input type="hidden" name="marque" value="<?= htmlspecialchars($marque) ?>"><?php endif; ?>
-          <div class="prix-range">
-            <input type="number" name="pmin" placeholder="Min" value="<?= (int)($_GET['pmin'] ?? '') ?: '' ?>" min="0"/>
-            <span style="color:#aaa">—</span>
-            <input type="number" name="pmax" placeholder="Max" value="<?= (int)($_GET['pmax'] ?? '') ?: '' ?>" min="0"/>
-          </div>
-          <button type="submit" class="btn-filter-apply">Appliquer</button>
-          <button type="button" class="btn-reset" onclick="window.location='catalog.php<?= $catSlug ? '?cat='.$catSlug : '' ?>'">Réinitialiser</button>
-        </form>
-      </div>
 
     </aside>
 

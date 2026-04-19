@@ -140,8 +140,10 @@ include __DIR__ . '/includes/header.php';
   <?php else: ?>
     <div class="favoris-grid" id="favorisGrid">
       <?php foreach ($favoris as $p):
-        $disc = ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix'])
-                ? round((1-$p['prix']/$p['ancien_prix'])*100) : 0;
+        $prix = (float)($p['prix'] ?? 0);
+        $ancien_prix = (float)($p['ancien_prix'] ?? 0);
+        $disc = ($ancien_prix && $ancien_prix > $prix)
+                ? round((1 - $prix / $ancien_prix) * 100) : 0;
       ?>
       <div class="fav-card" id="fav-<?= $p['id'] ?>" onclick="window.location='product.php?id=<?= $p['id'] ?>'">
 
@@ -159,22 +161,22 @@ include __DIR__ . '/includes/header.php';
         <?php endif; ?>
 
         <div class="fav-img">
-          <img src="<?= htmlspecialchars($p['image']) ?>"
-               alt="<?= htmlspecialchars($p['nom']) ?>"
+          <img src="<?= htmlspecialchars($p['image'] ?? '') ?>"
+               alt="<?= htmlspecialchars($p['nom'] ?? '') ?>"
                loading="lazy"
                onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect fill=%22%23f5f5f5%22 width=%22200%22 height=%22150%22/></svg>'"/>
         </div>
         <div class="fav-info">
-          <p class="fav-cat"><?= htmlspecialchars($p['cat_nom']) ?></p>
-          <p class="fav-name"><?= htmlspecialchars($p['nom']) ?></p>
-          <div class="fav-stars"><?= starsHtml($p['note']) ?> <span style="color:#aaa;font-size:11px">(<?= $p['nb_avis'] ?>)</span></div>
+          <p class="fav-cat"><?= htmlspecialchars($p['categorie_nom'] ?? $p['cat_nom'] ?? $p['categorie'] ?? '') ?></p>
+          <p class="fav-name"><?= htmlspecialchars($p['nom'] ?? '') ?></p>
+          <div class="fav-stars"><?= starsHtml($p['note'] ?? 0) ?> <span style="color:#aaa;font-size:11px">(<?= $p['nb_avis'] ?? 0 ?>)</span></div>
           <div class="fav-prix">
-            <span class="fav-prix-new">XAF <?= number_format($p['prix'], 0, '.', ' ') ?></span>
-            <?php if ($p['ancien_prix']): ?>
+            <span class="fav-prix-new">XAF <?= number_format($p['prix'] ?? 0, 0, '.', ' ') ?></span>
+            <?php if ($p['ancien_prix'] ?? null): ?>
               <span class="fav-prix-old">XAF <?= number_format($p['ancien_prix'], 0, '.', ' ') ?></span>
             <?php endif; ?>
           </div>
-          <button class="btn-add-fav btn-add" data-id="<?= $p['id'] ?>"
+          <button class="btn-add-fav btn-add" data-id="<?= $p['id'] ?? '' ?>"
                   onclick="event.stopPropagation()">
             <i class="fas fa-cart-plus"></i> Ajouter au panier
           </button>

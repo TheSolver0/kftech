@@ -376,37 +376,27 @@ function initCart() {
 // HAMBURGER + MOBILE NAV
 // ================================================
 function initHamburger() {
-  var btn   = document.querySelector('.nav-menu-btn');
-  var links = document.querySelector('.nav-links');
-  var nav   = document.getElementById('mainNav');
-  if (!btn || !links) return;
+  var btn = document.querySelector('.nav-menu-btn');
+  var navLinksMobile = document.getElementById('navLinksMobile');
+  if (!btn || !navLinksMobile) return;
 
   btn.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    var isOpen = links.classList.toggle('open');
-    btn.innerHTML = isOpen
-      ? '<i class="fas fa-times"></i>'
-      : '<i class="fas fa-bars"></i>';
-   // Positionner le menu juste sous la navbar
-    if (isOpen && nav) {
-      var navBottom = nav.getBoundingClientRect().bottom;
-      links.style.top = navBottom + 'px';
-    }
+    var isOpen = navLinksMobile.classList.toggle('open');
+    btn.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
   });
 
-  // Fermer en cliquant un lien
-  links.querySelectorAll('a').forEach(function(a) {
-    a.addEventListener('click', function() {
-      links.classList.remove('open');
+  navLinksMobile.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      navLinksMobile.classList.remove('open');
       btn.innerHTML = '<i class="fas fa-bars"></i>';
     });
   });
 
-  // Fermer en dehors
   document.addEventListener('click', function(e) {
-    if (!btn.contains(e.target) && !links.contains(e.target)) {
-      links.classList.remove('open');
+    if (!e.target.closest('.navbar-mobile') && !e.target.closest('.nav-links-mobile')) {
+      navLinksMobile.classList.remove('open');
       btn.innerHTML = '<i class="fas fa-bars"></i>';
     }
   });
@@ -424,14 +414,17 @@ function adjustOffset() {
     var headerH = header.offsetHeight;
     nav.style.top = headerH + 'px';
 
-    // Définir l'offset total pour compenser le fixed
-    var totalOffset = headerH + nav.offsetHeight;
+    var mobileSearch = document.querySelector('.mobile-search');
+    var searchH = mobileSearch ? mobileSearch.offsetHeight : 0;
+
+    // Définir l'offset total pour compenser le fixed navbar + barre de recherche
+    var totalOffset = headerH + nav.offsetHeight + searchH;
     document.documentElement.style.setProperty('--kf-offset', totalOffset + 'px');
 
     // Mettre à jour le top du menu ouvert s'il est visible
     var links = document.querySelector('.nav-links.open');
     if (links) {
-      links.style.top = (headerH + nav.offsetHeight) + 'px';
+      links.style.top = totalOffset + 'px';
     }
   } else {
     nav.style.top = '';
@@ -803,36 +796,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// ================================================
-// HAMBURGER MENU MOBILE
-// ================================================
-document.addEventListener('DOMContentLoaded', function() {
-  var navMenuBtn = document.querySelector('.nav-menu-btn');
-  var navLinksMobile = document.getElementById('navLinksMobile');
-  
-  if (navMenuBtn && navLinksMobile) {
-    navMenuBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      navLinksMobile.classList.toggle('open');
-    });
-    
-    // Close menu on link click
-    var links = navLinksMobile.querySelectorAll('a');
-    links.forEach(function(link) {
-      link.addEventListener('click', function() {
-        navLinksMobile.classList.remove('open');
-      });
-    });
-    
-    // Close on outside click
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.navbar-mobile') && !e.target.closest('.nav-links-mobile')) {
-        navLinksMobile.classList.remove('open');
-      }
-    });
-  }
-});
 
 // ================================================
 // WISH BUTTON - MOBILE VERSION

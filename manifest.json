@@ -1,0 +1,32 @@
+{
+  "name": "KF Tech - Boutique Informatique",
+  "short_name": "KF Tech",
+  "description": "KF Tech, votre boutique informatique à Douala. Laptops, smartphones, tablettes, accessoires au meilleur prix.",
+  "start_url": "https://kftech237.com/index.php",
+  "scope": "https://kftech237.com/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#FF6B35",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://kftech237.com/assets/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://kftech237.com/assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://kftech237.com/assets/images/logo.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ]
+}
