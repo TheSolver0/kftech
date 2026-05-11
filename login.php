@@ -1,3 +1,9 @@
+<?php
+// Empêcher la mise en cache du navigateur pour cette page
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -73,6 +79,28 @@
     .alert.error   { background:#fff0f0; border:1px solid #fcc; color:#c0392b; }
     .alert.success { background:#f0fff4; border:1px solid #9fc; color:#27ae60; }
     .alert.show { display:block; }
+    .social-login { display:flex; gap:12px; margin-bottom:22px; }
+    .social-btn {
+      flex:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,.08);
+      background:#fff;
+      color:#333;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s;
+    }
+    .social-btn:hover { transform: translateY(-1px); }
+    .social-btn.google { background:#4285f4; color:#fff; border-color:#4285f4; }
+    .social-btn.facebook { background:#1877f2; color:#fff; border-color:#1877f2; }
+    .form-actions { position: sticky; bottom: 0; background:#fff; padding:18px 0 0; margin-top:20px; border-top:1px solid #f1f1f1; }
+    .form-actions .switch-text { margin-top: 14px; }
     @media (max-width:900px) { .left-panel { display:none; } .right-panel { width:100%; } }
     @media (max-width:480px) { .right-panel { padding:32px 24px; } .form-row-2 { grid-template-columns:1fr; } }
   </style>
@@ -119,8 +147,22 @@
       <label class="check-label"><input type="checkbox"/> Se souvenir de moi</label>
       <a href="#" class="forgot-link">Mot de passe oublié ?</a>
     </div>
-    <button class="btn-submit" id="doLogin">Se connecter <i class="fas fa-arrow-right"></i></button>
-    <p class="switch-text">Pas encore de compte ? <a href="#" id="toRegister">Créer un compte</a></p>
+    <div class="form-actions">
+      <button class="btn-submit" id="doLogin">Se connecter <i class="fas fa-arrow-right"></i></button>
+      <p class="switch-text">Pas encore de compte ? <a href="#" id="toRegister">Créer un compte</a></p>
+    </div>
+    <div class="form-divider"><span>ou continuer avec</span></div>
+    <div class="social-login">
+      <button type="button" class="social-btn facebook" onclick="socialLogin('Facebook')" title="Continuer avec Facebook">
+        <i class="fab fa-facebook-f"></i>
+      </button>
+      <button type="button" class="social-btn google" onclick="socialLogin('Google')" title="Continuer avec Google">
+        <i class="fab fa-google"></i>
+      </button>
+      <button type="button" class="social-btn apple" onclick="socialLogin('Apple')" title="Continuer avec Apple">
+        <i class="fab fa-apple"></i>
+      </button>
+    </div>
   </div>
 
   <!-- INSCRIPTION -->
@@ -142,8 +184,22 @@
       <div class="pass-wrap"><input type="password" id="regConfirm" placeholder="••••••••"/><button class="eye-btn" data-target="regConfirm"><i class="fas fa-eye"></i></button></div>
     </div>
     <div class="f-group"><label class="check-label" style="font-size:12px;text-transform:none;letter-spacing:0"><input type="checkbox" id="acceptTerms"/> J'accepte les <a href="#" style="color:var(--orange)">conditions d'utilisation</a></label></div>
-    <button class="btn-submit" id="doRegister">Créer mon compte <i class="fas fa-arrow-right"></i></button>
-    <p class="switch-text">Déjà un compte ? <a href="#" id="toLogin">Se connecter</a></p>
+    <div class="form-actions">
+      <button class="btn-submit" id="doRegister">Créer mon compte <i class="fas fa-arrow-right"></i></button>
+      <p class="switch-text">Déjà un compte ? <a href="#" id="toLogin">Se connecter</a></p>
+    </div>
+    <div class="form-divider"><span>ou continuer avec</span></div>
+    <div class="social-login">
+      <button type="button" class="social-btn facebook" onclick="socialLogin('Facebook')" title="Continuer avec Facebook">
+        <i class="fab fa-facebook-f"></i>
+      </button>
+      <button type="button" class="social-btn google" onclick="socialLogin('Google')" title="Continuer avec Google">
+        <i class="fab fa-google"></i>
+      </button>
+      <button type="button" class="social-btn apple" onclick="socialLogin('Apple')" title="Continuer avec Apple">
+        <i class="fab fa-apple"></i>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -173,6 +229,11 @@ function showAlert(id, msg, type) {
   var el = document.getElementById(id);
   el.innerHTML = msg;
   el.className = 'alert ' + type + ' show';
+}
+
+function socialLogin(provider) {
+  var target = document.getElementById('panelLogin').classList.contains('active') ? 'alertLogin' : 'alertRegister';
+  showAlert(target, 'Connexion avec ' + provider + ' en préparation. Intégration future prévue.', 'success');
 }
 
 // ---- EYE TOGGLE ----

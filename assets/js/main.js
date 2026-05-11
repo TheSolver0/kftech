@@ -527,6 +527,443 @@ function showToast(msg, type) {
   }, 3500);
 }
 
+function canShowNotifications() {
+  return 'Notification' in window;
+}
+
+function updateNotifyButtonState() {
+  var btn = document.getElementById('notifyBtn');
+  if (!btn) return;
+  if (!canShowNotifications()) {
+    btn.textContent = 'Notifications non supportées';
+    btn.disabled = true;
+    btn.classList.remove('active');
+    btn.title = 'Votre navigateur ne supporte pas les notifications';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.textContent = 'Notifications activées ✓';
+    btn.classList.add('active');
+    btn.disabled = true;
+    btn.title = 'Les notifications sont activées pour ce site';
+  } else if (Notification.permission === 'denied') {
+    btn.textContent = 'Notifications refusées ✗ — Réactiver';
+    btn.classList.remove('active');
+    btn.classList.add('blocked');
+    btn.disabled = false;
+    btn.title = 'Cliquez pour voir comment réactiver les notifications';
+  } else {
+    btn.textContent = 'Activer notifications';
+    btn.classList.remove('active');
+    btn.disabled = false;
+    btn.title = 'Cliquez pour activer les notifications pour ce site';
+  }
+}
+
+function requestNotificationPermission() {
+  if (!canShowNotifications()) {
+    showToast('Votre navigateur ne prend pas en charge les notifications.', 'error');
+    return;
+  }
+
+  // Vérifier si la permission est déjà refusée (denied)
+  if (Notification.permission === 'denied') {
+    showNotificationBlockedInstructions();
+    return;
+  }
+
+  Notification.requestPermission().then(function(permission) {
+    updateNotifyButtonState();
+    if (permission === 'granted') {
+      showToast('Notifications activées !', 'success');
+      // Afficher une notification in-app avec les produits récents
+      showRecentProductsNotification();
+    } else if (permission === 'denied') {
+      showNotificationBlockedInstructions();
+      sessionStorage.setItem('kftech_notifications_declined', '1');
+    }
+  });
+}
+
+/**
+ * Affiche une notification in-app avec les produits récents
+ * Récupère les produits disponibles sur la page ou via l'API
+ */
+function showRecentProductsNotification() {
+  // Chercher les produits sur la page actuelle
+  var prodCards = document.querySelectorAll('.prod-card');
+  
+  if (prodCards.length > 0) {
+    // On a des produits sur la page, on les affiche
+    var categoryName = window.KFTECH_CATEGORY_NAME || 'Nouveautés';
+    var categorySlug = window.KFTECH_CATEGORY_SLUG || 'produits';
+    
+    var recentProducts = [];
+    var maxProducts = Math.min(5, prodCards.length);
+    
+    for (var i = 0; i < maxProducts; i++) {
+      var card = prodCards[i];
+      var nameEl = card.querySelector('.prod-name');
+      var priceEl = card.querySelector('.prod-price-new');
+      var imgEl = card.querySelector('img');
+      var clickLink = card.getAttribute('onclick');
+      
+      var productId = null;
+      if (clickLink && clickLink.includes('product.php?id=')) {
+        productId = clickLink.match(/product\.php\?id=(\d+)/);
+        productId = productId ? productId[1] : null;
+      }
+      
+      if (nameEl && priceEl && productId) {
+        var priceText = priceEl.textContent.replace(/[^0-9]/g, '');
+        recentProducts.push({
+          id: productId,
+          nom: nameEl.textContent.trim(),
+          prix: parseInt(priceText),
+          image: imgEl ? imgEl.src : null
+        });
+      }
+    }
+    
+    if (recentProducts.length > 0) {
+      showProductNotification(categoryName, categorySlug, recentProducts);
+    }
+  } else {
+    // Pas de produits sur la page, récupérer via l'API
+    fetchRecentProductsNotification();
+  }
+}
+
+/**
+ * Récupère les produits récents via l'API et affiche une notification
+ */
+function fetchRecentProductsNotification() {
+  // Récupérer les produits tendance
+  fetch('api/produits.php?action=recent&limit=5')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data && data.produits && data.produits.length > 0) {
+        showProductNotification('Découvrez', 'produits', data.produits);
+      }
+    })
+    .catch(function(err) {
+      console.log('Erreur récupération produits récents:', err);
+    });
+}
+
+function showNotificationPrompt() {
+  if (!canShowNotifications()) return;
+  if (Notification.permission !== 'default') return;
+  if (sessionStorage.getItem('kftech_notifications_declined')) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'notify-modal-overlay';
+  overlay.innerHTML =
+    '<div class="notify-modal">' +
+      '<h3>KF Tech souhaite vous envoyer des notifications</h3>' +
+      '<p>Restez informé(e) des nouveaux produits et promotions dès qu’ils sont disponibles.</p>' +
+      '<div class="notify-modal-actions">' +
+        '<button class="accept">Accepter</button>' +
+        '<button class="decline">Refuser</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('.accept').addEventListener('click', function() {
+    requestNotificationPermission();
+    overlay.remove();
+  });
+  overlay.querySelector('.decline').addEventListener('click', function() {
+    sessionStorage.setItem('kftech_notifications_declined', '1');
+    overlay.remove();
+  });
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      sessionStorage.setItem('kftech_notifications_declined', '1');
+      overlay.remove();
+    }
+  });
+}
+
+/**
+ * Affiche les instructions pour réactiver les notifications bloquées
+ */
+function showNotificationBlockedInstructions() {
+  var browserName = getBrowserName();
+  var instructions = '';
+
+  if (browserName.includes('Chrome') || browserName.includes('Edge')) {
+    instructions = '<strong>Réactiver les notifications dans ' + browserName + ':</strong><ol style="text-align: left; margin: 10px 0;">' +
+      '<li>Cliquez sur l\'icône <strong>🔒 Verrouillé</strong> à gauche de l\'URL</li>' +
+      '<li>Cherchez <strong>"Notifications"</strong></li>' +
+      '<li>Changez le paramètre à <strong>"Autoriser"</strong></li>' +
+      '<li>Rechargez la page</li>' +
+      '</ol>';
+  } else if (browserName.includes('Firefox')) {
+    instructions = '<strong>Réactiver les notifications dans Firefox:</strong><ol style="text-align: left; margin: 10px 0;">' +
+      '<li>Cliquez sur l\'icône <strong>ℹ️ Info</strong> à gauche de l\'URL</li>' +
+      '<li>Allez dans <strong>Paramètres du site</strong></li>' +
+      '<li>Cherchez <strong>"Notifications"</strong></li>' +
+      '<li>Changez-la de <strong>"Bloquer"</strong> à <strong>"Autoriser"</strong></li>' +
+      '<li>Rechargez la page</li>' +
+      '</ol>';
+  } else {
+    instructions = '<strong>Réactiver les notifications:</strong><ol style="text-align: left; margin: 10px 0;">' +
+      '<li>Allez dans les paramètres du site (généralement via l\'icône 🔒 ou ℹ️)</li>' +
+      '<li>Cherchez le paramètre <strong>"Notifications"</strong></li>' +
+      '<li>Changez-le à <strong>"Autoriser"</strong></li>' +
+      '<li>Rechargez la page</li>' +
+      '</ol>';
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'notify-modal-overlay';
+  overlay.innerHTML = '<div class="notify-modal" style="max-width: 500px;">' +
+    '<h3>⚙️ Notifications bloquées</h3>' +
+    '<p>Les notifications sont actuellement bloquées pour ce site. Voici comment les réactiver:</p>' +
+    '<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 13px;">' +
+      instructions +
+    '</div>' +
+    '<p style="color: #888; font-size: 12px; margin-top: 15px;">' +
+      '<em>💡 Astuce: vous recevrez aussi des notifications visuelles in-app même sans permission Web API</em>' +
+    '</p>' +
+    '<div class="notify-modal-actions">' +
+      '<button class="close-modal" style="flex: 1;">Compris</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.querySelector('.close-modal').addEventListener('click', function() {
+    overlay.remove();
+  });
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+}
+
+/**
+ * Détecte le navigateur utilisé
+ */
+function getBrowserName() {
+  var ua = navigator.userAgent;
+  if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg/') > -1) return 'Edge';
+  if (ua.indexOf('Chrome') > -1 && ua.indexOf('EdgA') === -1) return 'Chrome';
+  if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) return 'Safari';
+  if (ua.indexOf('Firefox') > -1) return 'Firefox';
+  if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR/') > -1) return 'Opera';
+  return 'votre navigateur';
+}
+
+function showDesktopNotification(title, body) {
+  if (!canShowNotifications() || Notification.permission !== 'granted') {
+    return;
+  }
+  try {
+    new Notification(title, {
+      body: body,
+      icon: 'assets/images/logo.png'
+    });
+  } catch (e) {
+    console.warn('Notification impossible:', e);
+  }
+}
+
+/**
+ * Affiche une notification in-app avec les produits récents d'une catégorie
+ * @param {string} categoryName - Nom de la catégorie
+ * @param {string} categorySlug - Slug de la catégorie
+ * @param {array} products - Liste des produits à afficher (max 5)
+ */
+function showProductNotification(categoryName, categorySlug, products) {
+  if (!products || products.length === 0) return;
+
+  var popup = document.createElement('div');
+  popup.className = 'notification-popup';
+  popup.innerHTML = '';
+
+  var headerHtml = '<div class="notification-header">' +
+    '<h4><i class="fas fa-star"></i> Nouveaux produits</h4>' +
+    '<button class="close-btn" title="Fermer">×</button>' +
+    '</div>';
+
+  var contentHtml = '<div class="notification-content">';
+  var productsToShow = products.slice(0, 5);
+  
+  productsToShow.forEach(function(prod) {
+    var image = prod.image || 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=100&q=80';
+    var price = prod.prix ? ('XAF ' + Number(prod.prix).toLocaleString('fr-FR')) : 'Prix non disponible';
+    var productLink = 'product.php?id=' + prod.id;
+    
+    contentHtml += '<a href="' + productLink + '" class="notification-item">' +
+      '<div class="notification-item-img">' +
+        '<img src="' + image + '" alt="' + prod.nom + '" loading="lazy"/>' +
+      '</div>' +
+      '<div class="notification-item-info">' +
+        '<div class="notification-item-name">' + prod.nom + '</div>' +
+        '<div class="notification-item-price">' + price + '</div>' +
+        '<div class="notification-item-cat">' + categoryName + '</div>' +
+      '</div>' +
+    '</a>';
+  });
+  
+  contentHtml += '</div>';
+
+  var footerHtml = '<div class="notification-footer">' +
+    '<a href="catalog.php?cat=' + categorySlug + '">' +
+      'Voir toute la catégorie ' +
+      '<i class="fas fa-arrow-right"></i>' +
+    '</a>' +
+    '</div>';
+
+  popup.innerHTML = headerHtml + contentHtml + footerHtml;
+  document.body.appendChild(popup);
+
+  // Ajouter les événements
+  var closeBtn = popup.querySelector('.close-btn');
+  closeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    closeNotificationPopup(popup);
+  });
+
+  popup.addEventListener('click', function(e) {
+    if (e.target === popup) {
+      closeNotificationPopup(popup);
+    }
+  });
+
+  // Auto-fermeture après 8 secondes
+  var autoCloseTimer = setTimeout(function() {
+    if (popup.parentNode) {
+      closeNotificationPopup(popup);
+    }
+  }, 8000);
+
+  // Annuler l'auto-fermeture si on hover
+  popup.addEventListener('mouseenter', function() {
+    clearTimeout(autoCloseTimer);
+  });
+
+  popup.addEventListener('mouseleave', function() {
+    autoCloseTimer = setTimeout(function() {
+      if (popup.parentNode) {
+        closeNotificationPopup(popup);
+      }
+    }, 2000);
+  });
+}
+
+function closeNotificationPopup(popup) {
+  popup.classList.add('closing');
+  setTimeout(function() {
+    if (popup.parentNode) {
+      popup.remove();
+    }
+  }, 400);
+}
+
+function compareCategoryProducts() {
+  if (!window.KFTECH_CATEGORY_SLUG || !Array.isArray(window.KFTECH_CATEGORY_PRODUCT_IDS)) {
+    return;
+  }
+  var key = 'kftech_seen_' + window.KFTECH_CATEGORY_SLUG;
+  var previous = [];
+  try { previous = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { previous = []; }
+  var current = window.KFTECH_CATEGORY_PRODUCT_IDS || [];
+  if (!Array.isArray(previous)) previous = [];
+  var added = current.filter(function(id) { return previous.indexOf(id) === -1; });
+  if (added.length && previous.length) {
+    var title = 'Nouveaux produits dans ' + (window.KFTECH_CATEGORY_NAME || window.KFTECH_CATEGORY_SLUG);
+    var message = added.length + ' nouveau' + (added.length > 1 ? 'x produits ajoutés' : ' produit ajouté') + ' !';
+    
+    // Afficher notification desktop si permission est accordée
+    if (Notification.permission === 'granted') {
+      showDesktopNotification(title, message);
+    }
+    
+    // Toujours afficher une notification in-app (toast)
+    showToast(message, 'success');
+    
+    // Aussi afficher la notification visuelle in-app si elle n'est pas déjà affichée
+    var notifKey = 'kftech_notif_shown_' + window.KFTECH_CATEGORY_SLUG;
+    var lastShown = localStorage.getItem(notifKey);
+    var now = new Date().getTime();
+    
+    // Afficher la notification visuelle une fois par jour maximum
+    if (!lastShown || (now - parseInt(lastShown)) > 86400000) {
+      setTimeout(function() {
+        showRecentProductsNotification();
+      }, 1000);
+      localStorage.setItem(notifKey, now.toString());
+    }
+  }
+  localStorage.setItem(key, JSON.stringify(current.slice(0, 100)));
+}
+
+function initNotifications() {
+  var btn = document.getElementById('notifyBtn');
+  if (btn) {
+    btn.addEventListener('click', requestNotificationPermission);
+  }
+  updateNotifyButtonState();
+  
+  // Afficher le prompt initial si c'est la première visite
+  showNotificationPrompt();
+  
+  // Afficher les notifications in-app dès le chargement
+  // (fonctionne indépendamment de la permission Web API)
+  setTimeout(function() {
+    showRecentProductsNotification();
+  }, 500);
+  
+  // Comparer et notifier des nouveaux produits
+  compareCategoryProducts();
+}
+
+/**
+ * Affiche des notifications in-app avec les produits récents
+ * Cette fonction n'a besoin d'aucune permission du navigateur
+ */
+function displayInAppNotifications() {
+  // Chercher les produits sur la page actuelle
+  var prodCards = document.querySelectorAll('.prod-card');
+  
+  if (prodCards.length > 0) {
+    var categoryName = window.KFTECH_CATEGORY_NAME || 'Nouveautés';
+    var categorySlug = window.KFTECH_CATEGORY_SLUG || 'produits';
+    
+    var recentProducts = [];
+    var maxProducts = Math.min(5, prodCards.length);
+    
+    for (var i = 0; i < maxProducts; i++) {
+      var card = prodCards[i];
+      var nameEl = card.querySelector('.prod-name');
+      var priceEl = card.querySelector('.prod-price-new');
+      var imgEl = card.querySelector('img');
+      var clickLink = card.getAttribute('onclick');
+      
+      var productId = null;
+      if (clickLink && clickLink.includes('product.php?id=')) {
+        productId = clickLink.match(/product\.php\?id=(\d+)/);
+        productId = productId ? productId[1] : null;
+      }
+      
+      if (nameEl && priceEl && productId) {
+        var priceText = priceEl.textContent.replace(/[^0-9]/g, '');
+        recentProducts.push({
+          id: productId,
+          nom: nameEl.textContent.trim(),
+          prix: parseInt(priceText),
+          image: imgEl ? imgEl.src : null
+        });
+      }
+    }
+    
+    if (recentProducts.length > 0) {
+      showProductNotification(categoryName, categorySlug, recentProducts);
+    }
+  }
+}
+
 // ================================================
 // INIT GLOBAL
 // ================================================
@@ -537,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initSearch();
   initSearchMobile();
   initScroll();
+  initNotifications();
 });
 
 // ================================================

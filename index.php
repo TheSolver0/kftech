@@ -1,4 +1,9 @@
 <?php
+// Empêcher la mise en cache du navigateur pour cette page
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 session_start();
 require_once __DIR__ . '/config/api.php';
 
@@ -55,6 +60,9 @@ $bestProds = $bestData['produits'] ?? [];
 // ---- PRODUITS TENDANCE ----
 $trendData  = apiGet('/products/tendance');
 $trendProds = $trendData['produits'] ?? [];
+
+// ---- ÉVÉNEMENTS ACTIFS ----
+$events = apiGetEvents();
 
 // ---- SMARTPHONES / TABLETTES ----
 $smartData1 = apiGet('/products?cat=smartphones&limit=4');
@@ -231,6 +239,38 @@ setTimeout(function() {
   </div>
 </section>
 
+<!-- ÉVÉNEMENTS ACTIFS -->
+<?php if (!empty($events)): ?>
+<section class="events-section pad">
+  <div class="container">
+    <div class="section-header-row">
+      <h2 class="sec-title"><span>Événements</span> & Promotions</h2>
+      <a href="catalog.php?promo=true" class="btn-outline">Voir toutes les promos</a>
+    </div>
+    <div class="events-grid">
+      <?php foreach ($events as $event): ?>
+      <div class="event-card" onclick="window.location='catalog.php?eventId=<?= $event['id'] ?>'">
+        <div class="event-banner" style="background: <?= htmlspecialchars($event['bg_color'] ?? '#1a1a1a') ?>; color: <?= htmlspecialchars($event['text_color'] ?? '#FFD700') ?>;">
+          <?php if (!empty($event['bannerImage'])): ?>
+            <img src="<?= htmlspecialchars($event['bannerImage']) ?>" alt="<?= htmlspecialchars($event['nom']) ?>" class="event-img"/>
+          <?php endif; ?>
+          <div class="event-overlay">
+            <div class="event-badge"><?= htmlspecialchars($event['badge'] ?? 'PROMO') ?></div>
+            <h3 class="event-title"><?= htmlspecialchars($event['nom']) ?></h3>
+            <p class="event-desc"><?= htmlspecialchars($event['description'] ?? '') ?></p>
+            <div class="event-meta">
+              <span><i class="fas fa-calendar"></i> Du <?= date('d/m', strtotime($event['start_date'])) ?> au <?= date('d/m', strtotime($event['end_date'])) ?></span>
+              <span><i class="fas fa-box"></i> <?= intval($event['nb_produits'] ?? 0) ?> produits</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
 <!-- PRODUITS TENDANCE -->
 <section class="trending-section pad" id="trending-section">
   <div class="container">
@@ -258,10 +298,36 @@ setTimeout(function() {
         </div>
         <div class="prod-grid" id="trendGrid">
           <?php foreach ($trendProds as $p):
-            $disc = ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix']) ? round((1-$p['prix']/$p['ancien_prix'])*100) : 0;
+            // Utiliser les nouvelles données promo de l'API
+            $enPromo = $p['en_promo'] ?? false;
+            $prixRemise = $p['prix_remise'] ?? null;
+            $pourcentageRemise = $p['pourcentage_remise'] ?? null;
+            $evenementsActifs = $p['evenements_actifs'] ?? [];
+            
+            // Calcul du pourcentage si pas fourni
+            $disc = 0;
+            if ($enPromo && $prixRemise && $p['prix'] > $prixRemise) {
+                $disc = round((1 - $prixRemise / $p['prix']) * 100);
+            } elseif ($pourcentageRemise) {
+                $disc = round($pourcentageRemise);
+            } elseif ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix']) {
+                $disc = round((1 - $p['prix'] / $p['ancien_prix']) * 100);
+            }
+            
+            // Prix à afficher
+            $prixAffiche = $enPromo && $prixRemise ? $prixRemise : $p['prix'];
+            $ancienPrix = $enPromo && $prixRemise ? $p['prix'] : ($p['ancien_prix'] ?? null);
           ?>
           <div class="prod-card" onclick="window.location='product.php?id=<?= $p['id'] ?>'">
-            <span class="prod-badge"><?= htmlspecialchars($p['badge']) ?></span>
+            <?php if (!empty($evenementsActifs)): ?>
+              <?php foreach ($evenementsActifs as $event): ?>
+                <span class="prod-badge" style="background: <?= htmlspecialchars($event['bg_color'] ?? '#ff6b35') ?>; color: <?= htmlspecialchars($event['text_color'] ?? '#fff') ?>;">
+                  <?= htmlspecialchars($event['badge'] ?? 'PROMO') ?>
+                </span>
+              <?php endforeach; ?>
+            <?php elseif ($p['badge']): ?>
+              <span class="prod-badge"><?= htmlspecialchars($p['badge']) ?></span>
+            <?php endif; ?>
             <?php if ($disc): ?><span class="prod-disc">-<?= $disc ?>%</span><?php endif; ?>
             <div class="prod-img">
               <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" loading="lazy"
@@ -271,13 +337,13 @@ setTimeout(function() {
               <div class="prod-stars"><?= starsHtml($p['note']) ?> <span>(<?= $p['nb_avis'] ?>)</span></div>
               <p class="prod-name"><?= htmlspecialchars($p['nom']) ?></p>
               <div class="prod-prices">
-                <span class="prod-price-new"><?= prix((float)$p['prix']) ?></span>
-                <?php if ($p['ancien_prix']): ?><span class="prod-price-old"><?= prix((float)$p['ancien_prix']) ?></span><?php endif; ?>
+                <span class="prod-price-new"><?= prix((float)$prixAffiche) ?></span>
+                <?php if ($ancienPrix && $ancienPrix > $prixAffiche): ?><span class="prod-price-old"><?= prix((float)$ancienPrix) ?></span><?php endif; ?>
               </div>
               <p class="prod-avail">Stock : <strong><?= $p['stock'] ?></strong></p>
               <button class="btn-add" data-id="<?= $p['id'] ?>"
                       data-name="<?= htmlspecialchars($p['nom'], ENT_QUOTES) ?>"
-                      data-price="<?= htmlspecialchars($p['prix'], ENT_QUOTES) ?>"
+                      data-price="<?= htmlspecialchars($prixAffiche, ENT_QUOTES) ?>"
                       data-image="<?= htmlspecialchars($p['image'], ENT_QUOTES) ?>"
                       onclick="event.stopPropagation()">Ajouter au panier</button>
             </div>
@@ -305,10 +371,36 @@ setTimeout(function() {
     <div class="smart-layout">
       <div class="smart-grid" id="smartGrid">
         <?php foreach ($smartProds as $sp):
-          $disc = ($sp['ancien_prix'] && $sp['ancien_prix'] > $sp['prix']) ? round((1-$sp['prix']/$sp['ancien_prix'])*100) : 0;
+          // Utiliser les nouvelles données promo de l'API
+          $enPromo = $sp['en_promo'] ?? false;
+          $prixRemise = $sp['prix_remise'] ?? null;
+          $pourcentageRemise = $sp['pourcentage_remise'] ?? null;
+          $evenementsActifs = $sp['evenements_actifs'] ?? [];
+          
+          // Calcul du pourcentage si pas fourni
+          $disc = 0;
+          if ($enPromo && $prixRemise && $sp['prix'] > $prixRemise) {
+              $disc = round((1 - $prixRemise / $sp['prix']) * 100);
+          } elseif ($pourcentageRemise) {
+              $disc = round($pourcentageRemise);
+          } elseif ($sp['ancien_prix'] && $sp['ancien_prix'] > $sp['prix']) {
+              $disc = round((1 - $sp['prix'] / $sp['ancien_prix']) * 100);
+          }
+          
+          // Prix à afficher
+          $prixAffiche = $enPromo && $prixRemise ? $prixRemise : $sp['prix'];
+          $ancienPrix = $enPromo && $prixRemise ? $sp['prix'] : ($sp['ancien_prix'] ?? null);
         ?>
         <div class="prod-card" onclick="window.location='product.php?id=<?= $sp['id'] ?>'">
-          <span class="prod-badge"><?= htmlspecialchars($sp['badge']) ?></span>
+          <?php if (!empty($evenementsActifs)): ?>
+            <?php foreach ($evenementsActifs as $event): ?>
+              <span class="prod-badge" style="background: <?= htmlspecialchars($event['bg_color'] ?? '#ff6b35') ?>; color: <?= htmlspecialchars($event['text_color'] ?? '#fff') ?>;">
+                <?= htmlspecialchars($event['badge'] ?? 'PROMO') ?>
+              </span>
+            <?php endforeach; ?>
+          <?php elseif ($sp['badge']): ?>
+            <span class="prod-badge"><?= htmlspecialchars($sp['badge']) ?></span>
+          <?php endif; ?>
           <?php if ($disc): ?><span class="prod-disc">-<?= $disc ?>%</span><?php endif; ?>
           <div class="prod-img">
             <img src="<?= htmlspecialchars($sp['image']) ?>" alt="<?= htmlspecialchars($sp['nom']) ?>" loading="lazy"
@@ -318,13 +410,13 @@ setTimeout(function() {
             <div class="prod-stars"><?= starsHtml($sp['note']) ?> <span>(<?= $sp['nb_avis'] ?>)</span></div>
             <p class="prod-name"><?= htmlspecialchars($sp['nom']) ?></p>
             <div class="prod-prices">
-              <span class="prod-price-new"><?= prix((float)$sp['prix']) ?></span>
-              <?php if ($sp['ancien_prix']): ?><span class="prod-price-old"><?= prix((float)$sp['ancien_prix']) ?></span><?php endif; ?>
+              <span class="prod-price-new"><?= prix((float)$prixAffiche) ?></span>
+              <?php if ($ancienPrix && $ancienPrix > $prixAffiche): ?><span class="prod-price-old"><?= prix((float)$ancienPrix) ?></span><?php endif; ?>
             </div>
             <p class="prod-avail">Available: <strong><?= $sp['stock'] ?></strong></p>
             <button class="btn-add" data-id="<?= $sp['id'] ?>"
                     data-name="<?= htmlspecialchars($sp['nom'], ENT_QUOTES) ?>"
-                    data-price="<?= htmlspecialchars($sp['prix'], ENT_QUOTES) ?>"
+                    data-price="<?= htmlspecialchars($prixAffiche, ENT_QUOTES) ?>"
                     data-image="<?= htmlspecialchars($sp['image'], ENT_QUOTES) ?>"
                     onclick="event.stopPropagation()">Ajouter au panier</button>
           </div>

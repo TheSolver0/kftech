@@ -133,3 +133,45 @@ function categoryIconClass(array $cat): string {
 
     return 'fas fa-tag';
 }
+
+/**
+ * Récupérer les événements actifs
+ * @return array Liste des événements
+ */
+function apiGetEvents(): array {
+    return apiGet('/ecom/events');
+}
+
+/**
+ * Récupérer les produits d'un événement
+ * @param int $eventId ID de l'événement
+ * @return array Données de l'événement et ses produits
+ */
+function apiGetEventProducts(int $eventId): array {
+    return apiGet('/events/' . $eventId . '/products');
+}
+
+/**
+ * Récupérer les remises actives
+ * @return array Liste des remises actives
+ */
+function apiGetActiveDiscounts(): array {
+    return apiGet('/discounts/active');
+}
+
+/**
+ * Récupérer les produits avec filtres promo
+ * @param array $filters Filtres optionnels (promo, eventId, etc.)
+ * @return array Produits filtrés
+ */
+function apiGetProductsWithPromo(array $filters = []): array {
+    $params = [];
+    if (isset($filters['promo']) && $filters['promo']) {
+        $params['promo'] = 'true';
+    }
+    if (isset($filters['eventId'])) {
+        $params['eventId'] = $filters['eventId'];
+    }
+    $qs = $params ? '?' . http_build_query($params) : '';
+    return apiGet('/ecom/products' . $qs);
+}

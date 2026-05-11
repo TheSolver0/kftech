@@ -10,7 +10,7 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "https://kftech237.com/assets/images/logo.png",
+      "src": "https://kftech237.com/assets/images/logo.png",  
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"

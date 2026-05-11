@@ -1,4 +1,9 @@
 <?php
+// Empêcher la mise en cache du navigateur pour cette page
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 session_start();
 require_once __DIR__ . '/config/api.php';
 
@@ -6,6 +11,8 @@ require_once __DIR__ . '/config/api.php';
 $catSlug = trim($_GET['cat']    ?? '');
 $q       = trim($_GET['q']      ?? '');
 $marque  = trim($_GET['marque'] ?? '');
+$eventId = (int)($_GET['eventId'] ?? 0);
+$promo   = isset($_GET['promo']) && $_GET['promo'] === 'true';
 $tri     = $_GET['tri']         ?? 'recent';
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $limit   = 12;
@@ -28,7 +35,7 @@ if ($catSlug) {
 }
 
 // ---- PRODUITS + MARQUES + PAGINATION ----
-$params = array_filter([
+$filters = array_filter([
     'cat'    => $catSlug ?: null,
     'q'      => $q       ?: null,
     'marque' => $marque  ?: null,
@@ -37,28 +44,54 @@ $params = array_filter([
     'limit'  => $limit,
 ], fn($v) => $v !== null && $v !== '');
 
-$qs       = $params ? '?' . http_build_query($params) : '';
-$data     = apiGet('/products' . $qs);
+if ($eventId > 0) {
+    $filters['eventId'] = $eventId;
+}
+if ($promo) {
+    $filters['promo'] = true;
+}
+
+$qs       = $filters ? '?' . http_build_query($filters) : '';
+$data     = $eventId > 0 || $promo ? apiGetProductsWithPromo($filters) : apiGet('/products' . $qs);
 $produits   = $data['produits']  ?? [];
 $total      = $data['total']     ?? 0;
 $totalPages = $data['pages']     ?? 1;
 $allMarques = $data['marques']   ?? [];
 
 // ---- PAGE TITLE ----
-if ($q)           $pageTitle = "Résultats pour \"$q\" - KF Tech";
-elseif ($catInfo) $pageTitle = $catInfo['nom'] . " - KF Tech";
-else              $pageTitle = "Catalogue - KF Tech";
+$eventInfo = null;
+if ($eventId > 0) {
+    $eventData = apiGetEventProducts($eventId);
+    $eventInfo = $eventData['evenement'] ?? null;
+}
+
+if ($promo)           $pageTitle = "Produits en promotion - KF Tech";
+elseif ($eventInfo)   $pageTitle = $eventInfo['nom'] . " - KF Tech";
+elseif ($q)           $pageTitle = "Résultats pour \"$q\" - KF Tech";
+elseif ($catInfo)     $pageTitle = $catInfo['nom'] . " - KF Tech";
+else                  $pageTitle = "Catalogue - KF Tech";
 
 $activeCat = $catSlug;
 
 function buildUrl(array $extra = []): string {
-    $base   = array_filter($_GET, fn($k) => $k !== 'page', ARRAY_FILTER_USE_KEY);
+    $base = array_filter([
+        'cat' => $catSlug ?: null,
+        'q' => $q ?: null,
+        'marque' => $marque ?: null,
+        'eventId' => $eventId > 0 ? $eventId : null,
+        'promo' => $promo ? 'true' : null,
+    ]);
     $merged = array_merge($base, $extra);
     return 'catalog.php?' . http_build_query($merged);
 }
 
 include __DIR__ . '/includes/header.php';
 ?>
+<script>
+window.KFTECH_CATEGORY_SLUG = <?= json_encode($catSlug) ?>;
+window.KFTECH_CATEGORY_NAME = <?= json_encode($catInfo['nom'] ?? ($catSlug ? ucfirst($catSlug) : '')) ?>;
+window.KFTECH_CATEGORY_PRODUCT_IDS = <?= json_encode(array_values(array_filter(array_map(function($p){ return isset($p['id']) ? $p['id'] : null; }, $produits)))) ?>;
+</script>
 <style>
 /* ===== CATALOG PAGE ===== */
 .catalog-hero {
@@ -151,7 +184,15 @@ include __DIR__ . '/includes/header.php';
 <div class="catalog-hero">
   <div class="container">
     <h1>
-      <?php if ($q): ?>
+      <?php if ($promo): ?>
+        Produits en <span>Promotion</span>
+      <?php elseif ($eventInfo): ?>
+        <i class="fas fa-calendar-star" style="color:var(--orange);margin-right:10px"></i>
+        <?= htmlspecialchars($eventInfo['nom']) ?>
+        <span style="background: <?= htmlspecialchars($eventInfo['bg_color'] ?? '#ff6b35') ?>; color: <?= htmlspecialchars($eventInfo['text_color'] ?? '#fff') ?>; padding: 2px 8px; border-radius: 4px; font-size: 14px; margin-left: 10px;">
+          <?= htmlspecialchars($eventInfo['badge'] ?? 'PROMO') ?>
+        </span>
+      <?php elseif ($q): ?>
         Résultats pour <span>"<?= htmlspecialchars($q) ?>"</span>
       <?php elseif ($catInfo): ?>
         <i class="<?= $catInfo['icone'] ?>" style="color:var(--orange);margin-right:10px"></i><?= htmlspecialchars($catInfo['nom']) ?>
@@ -162,7 +203,11 @@ include __DIR__ . '/includes/header.php';
     <div class="breadcrumb-bar">
       <a href="index.php">Accueil</a><span>›</span>
       <a href="catalog.php">Catalogue</a>
-      <?php if ($catInfo): ?>
+      <?php if ($eventInfo): ?>
+        <span>›</span><strong style="color: <?= htmlspecialchars($eventInfo['bg_color'] ?? '#ff6b35') ?>;"><?= htmlspecialchars($eventInfo['nom']) ?></strong>
+      <?php elseif ($promo): ?>
+        <span>›</span><strong style="color: var(--orange);">Promotions</strong>
+      <?php elseif ($catInfo): ?>
         <span>›</span><strong><?= htmlspecialchars($catInfo['nom']) ?></strong>
       <?php endif; ?>
       <?php if ($q): ?>
@@ -265,12 +310,37 @@ include __DIR__ . '/includes/header.php';
       <?php else: ?>
         <div class="catalog-grid">
           <?php foreach ($produits as $p):
-            $disc = ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix'])
-                    ? round((1 - $p['prix']/$p['ancien_prix'])*100) : 0;
+            // Utiliser les nouvelles données promo de l'API
+            $enPromo = $p['en_promo'] ?? false;
+            $prixRemise = $p['prix_remise'] ?? null;
+            $pourcentageRemise = $p['pourcentage_remise'] ?? null;
+            $evenementsActifs = $p['evenements_actifs'] ?? [];
+            
+            // Calcul du pourcentage si pas fourni
+            $disc = 0;
+            if ($enPromo && $prixRemise && $p['prix'] > $prixRemise) {
+                $disc = round((1 - $prixRemise / $p['prix']) * 100);
+            } elseif ($pourcentageRemise) {
+                $disc = round($pourcentageRemise);
+            } elseif ($p['ancien_prix'] && $p['ancien_prix'] > $p['prix']) {
+                $disc = round((1 - $p['prix'] / $p['ancien_prix']) * 100);
+            }
+            
+            // Prix à afficher
+            $prixAffiche = $enPromo && $prixRemise ? $prixRemise : $p['prix'];
+            $ancienPrix = $enPromo && $prixRemise ? $p['prix'] : ($p['ancien_prix'] ?? null);
           ?>
           <div class="prod-card" onclick="window.location='product.php?id=<?= $p['id'] ?>'">
-            <span class="prod-badge"><?= htmlspecialchars($p['badge']) ?></span>
-            <?php if ($disc): ?>
+            <?php if (!empty($evenementsActifs)): ?>
+              <?php foreach ($evenementsActifs as $event): ?>
+                <span class="prod-badge" style="background: <?= htmlspecialchars($event['bg_color'] ?? '#ff6b35') ?>; color: <?= htmlspecialchars($event['text_color'] ?? '#fff') ?>;">
+                  <?= htmlspecialchars($event['badge'] ?? 'PROMO') ?>
+                </span>
+              <?php endforeach; ?>
+            <?php elseif ($p['badge']): ?>
+              <span class="prod-badge"><?= htmlspecialchars($p['badge']) ?></span>
+            <?php endif; ?>
+            <?php if ($disc > 0): ?>
               <span class="prod-disc">-<?= $disc ?>%</span>
             <?php endif; ?>
             <div class="prod-img">
@@ -283,9 +353,9 @@ include __DIR__ . '/includes/header.php';
               </div>
               <p class="prod-name"><?= htmlspecialchars($p['nom']) ?></p>
               <div class="prod-prices">
-                <span class="prod-price-new">XAF <?= number_format($p['prix'], 0, '.', ' ') ?></span>
-                <?php if ($p['ancien_prix']): ?>
-                  <span class="prod-price-old">XAF <?= number_format($p['ancien_prix'], 0, '.', ' ') ?></span>
+                <span class="prod-price-new">XAF <?= number_format($prixAffiche, 0, '.', ' ') ?></span>
+                <?php if ($ancienPrix && $ancienPrix > $prixAffiche): ?>
+                  <span class="prod-price-old">XAF <?= number_format($ancienPrix, 0, '.', ' ') ?></span>
                 <?php endif; ?>
               </div>
               <p class="prod-avail">Stock : <strong><?= $p['stock'] ?></strong></p>

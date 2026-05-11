@@ -1,4 +1,9 @@
 <?php
+// Empêcher la mise en cache du navigateur pour cette page
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 session_start();
 require_once __DIR__ . '/config/api.php';
 
@@ -88,9 +93,25 @@ $specs = [
 ];
 
 // ---- REMISE ----
-$disc = (!empty($p['ancien_prix']) && $p['ancien_prix'] > $p['prix'])
-        ? round((1 - $p['prix'] / $p['ancien_prix']) * 100)
-        : 0;
+// Utiliser les nouvelles données promo de l'API
+$enPromo = $p['en_promo'] ?? false;
+$prixRemise = $p['prix_remise'] ?? null;
+$pourcentageRemise = $p['pourcentage_remise'] ?? null;
+$evenementsActifs = $p['evenements_actifs'] ?? [];
+
+// Calcul du pourcentage si pas fourni
+$disc = 0;
+if ($enPromo && $prixRemise && $p['prix'] > $prixRemise) {
+    $disc = round((1 - $prixRemise / $p['prix']) * 100);
+} elseif ($pourcentageRemise) {
+    $disc = round($pourcentageRemise);
+} elseif (!empty($p['ancien_prix']) && $p['ancien_prix'] > $p['prix']) {
+    $disc = round((1 - $p['prix'] / $p['ancien_prix']) * 100);
+}
+
+// Prix à afficher
+$prixAffiche = $enPromo && $prixRemise ? $prixRemise : $p['prix'];
+$ancienPrix = $enPromo && $prixRemise ? $p['prix'] : ($p['ancien_prix'] ?? null);
 
 // ---- META PAGE ----
 $pageTitle = htmlspecialchars($p['nom']) . ' - KF Tech';
@@ -315,7 +336,15 @@ include __DIR__ . '/includes/header.php';
   <div class="gallery">
     <div class="gallery-main" id="mainImgWrap">
       <div class="g-badges">
-        <span class="g-badge-new"><?= htmlspecialchars($p['badge']) ?></span>
+        <?php if (!empty($evenementsActifs)): ?>
+          <?php foreach ($evenementsActifs as $event): ?>
+            <span class="g-badge-new" style="background: <?= htmlspecialchars($event['bg_color'] ?? '#ff6b35') ?>; color: <?= htmlspecialchars($event['text_color'] ?? '#fff') ?>;">
+              <?= htmlspecialchars($event['badge'] ?? 'PROMO') ?>
+            </span>
+          <?php endforeach; ?>
+        <?php elseif ($p['badge']): ?>
+          <span class="g-badge-new"><?= htmlspecialchars($p['badge']) ?></span>
+        <?php endif; ?>
         <?php if ($disc): ?><span class="g-badge-disc">-<?= $disc ?>%</span><?php endif; ?>
       </div>
       <img src="<?= htmlspecialchars($productImages[0] ?? $p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" id="mainImg"/>
@@ -345,9 +374,9 @@ include __DIR__ . '/includes/header.php';
       <?php endif; ?>
     </div>
     <div class="pi-prices">
-      <span class="pi-price-new">XAF <?= number_format($p['prix'], 0, '.', ' ') ?></span>
-      <?php if ($p['ancien_prix']): ?>
-        <span class="pi-price-old">XAF <?= number_format($p['ancien_prix'], 0, '.', ' ') ?></span>
+      <span class="pi-price-new">XAF <?= number_format($prixAffiche, 0, '.', ' ') ?></span>
+      <?php if ($ancienPrix && $ancienPrix > $prixAffiche): ?>
+        <span class="pi-price-old">XAF <?= number_format($ancienPrix, 0, '.', ' ') ?></span>
       <?php endif; ?>
       <?php if ($disc): ?><span class="pi-disc-tag">-<?= $disc ?>%</span><?php endif; ?>
     </div>
