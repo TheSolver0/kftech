@@ -29,8 +29,10 @@ function apiGet(string $path): array {
     if (strpos($path, 'products') !== false) {
         parse_str(parse_url(APIURL . '/' . ltrim($path, '/'), PHP_URL_QUERY), $query);
         $requestedCat = rawurldecode($query['cat'] ?? $query['categorie'] ?? $query['category'] ?? '');
-        $items = $result['produits'] ?? $result['items'] ?? null;
+        $items = $result['produits'] ?? $result['items'] ?? [];
 
+        // Si une catégorie spécifique est demandée et que 0 produits sont retournés, 
+        // récupérer tous les produits et filtrer localement
         if ($requestedCat !== '' && is_array($items) && count($items) === 0) {
             $all = apiGet('/products?limit=500');
             $products = $all['produits'] ?? $all['items'] ?? [];
@@ -51,6 +53,22 @@ function apiGet(string $path): array {
                     $result['items'] = $filtered;
                 } else {
                     $result = ['produits' => $filtered, 'total' => count($filtered), 'page' => 1, 'pages' => 1];
+                }
+            }
+        }
+        
+        // BONUS: Si aucun produit n'est retourné du tout (même sans catégorie),
+        // essayer de récupérer tous les produits (fallback ultime)
+        if (is_array($items) && count($items) === 0 && !$requestedCat) {
+            $allProducts = apiGet('/products?limit=500');
+            $products = $allProducts['produits'] ?? $allProducts['items'] ?? [];
+            if (is_array($products) && count($products) > 0) {
+                if (isset($result['produits'])) {
+                    $result['produits'] = $products;
+                    $result['total'] = count($products);
+                    $result['pages'] = max(1, ceil(count($products) / 12));
+                } else {
+                    $result = ['produits' => $products, 'total' => count($products), 'page' => 1, 'pages' => max(1, ceil(count($products) / 12))];
                 }
             }
         }

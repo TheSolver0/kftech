@@ -590,64 +590,187 @@ function requestNotificationPermission() {
  * Récupère les produits disponibles sur la page ou via l'API
  */
 function showRecentProductsNotification() {
-  // Chercher les produits sur la page actuelle
-  var prodCards = document.querySelectorAll('.prod-card');
-  
-  if (prodCards.length > 0) {
-    // On a des produits sur la page, on les affiche
-    var categoryName = window.KFTECH_CATEGORY_NAME || 'Nouveautés';
-    var categorySlug = window.KFTECH_CATEGORY_SLUG || 'produits';
-    
-    var recentProducts = [];
-    var maxProducts = Math.min(5, prodCards.length);
-    
-    for (var i = 0; i < maxProducts; i++) {
-      var card = prodCards[i];
-      var nameEl = card.querySelector('.prod-name');
-      var priceEl = card.querySelector('.prod-price-new');
-      var imgEl = card.querySelector('img');
-      var clickLink = card.getAttribute('onclick');
-      
-      var productId = null;
-      if (clickLink && clickLink.includes('product.php?id=')) {
-        productId = clickLink.match(/product\.php\?id=(\d+)/);
-        productId = productId ? productId[1] : null;
-      }
-      
-      if (nameEl && priceEl && productId) {
-        var priceText = priceEl.textContent.replace(/[^0-9]/g, '');
-        recentProducts.push({
-          id: productId,
-          nom: nameEl.textContent.trim(),
-          prix: parseInt(priceText),
-          image: imgEl ? imgEl.src : null
-        });
-      }
-    }
-    
-    if (recentProducts.length > 0) {
-      showProductNotification(categoryName, categorySlug, recentProducts);
-    }
-  } else {
-    // Pas de produits sur la page, récupérer via l'API
-    fetchRecentProductsNotification();
-  }
+  // TOUJOURS utiliser l'API pour avoir TOUTES les catégories
+  // (même si on est dans une page de catégorie)
+  fetchRecentProductsNotification();
 }
 
 /**
  * Récupère les produits récents via l'API et affiche une notification
  */
+/**
+ * Récupère les produits récents via l'API et affiche les notifications en boucle
+ */
 function fetchRecentProductsNotification() {
-  // Récupérer les produits tendance
-  fetch('api/produits.php?action=recent&limit=5')
+  fetch('api/produits.php?action=recent')
     .then(function(response) { return response.json(); })
     .then(function(data) {
       if (data && data.produits && data.produits.length > 0) {
-        showProductNotification('Découvrez', 'produits', data.produits);
+        // Grouper par catégorie
+        var productsByCategory = {};
+        data.produits.forEach(function(prod) {
+          var catName = prod.categorie_nom || 'Nouveautés';
+          if (!productsByCategory[catName]) {
+            productsByCategory[catName] = [];
+          }
+          productsByCategory[catName].push(prod);
+        });
+
+        // Créer un array de catégories
+        var categories = Object.keys(productsByCategory);
+        
+        // Lancer le carrousel avec délai initial de 2s
+        if (categories.length > 0) {
+          var notificationQueue = [];
+          categories.forEach(function(catName) {
+            notificationQueue.push({
+              catName: catName,
+              catSlug: productsByCategory[catName][0].categorie_slug || 'produits',
+              products: productsByCategory[catName]
+            });
+          });
+          
+          // Démarrer le carrousel avec délai de 2 secondes
+          setTimeout(function() {
+            startNotificationCarousel(notificationQueue, 0);
+          }, 2000);
+        }
+      } else {
+        fetchRecentProductsNotificationFallback();
       }
     })
     .catch(function(err) {
       console.log('Erreur récupération produits récents:', err);
+      fetchRecentProductsNotificationFallback();
+    });
+}
+
+/**
+ * Lance le carrousel de notifications
+ */
+var currentNotificationPopup = null;
+
+function startNotificationCarousel(queue, index) {
+  if (!queue || queue.length === 0) return;
+  
+  // Boucler si on atteint la fin
+  var currentIndex = index % queue.length;
+  var current = queue[currentIndex];
+  
+  // Fermer la notification précédente si elle existe
+  if (currentNotificationPopup && currentNotificationPopup.parentNode) {
+    currentNotificationPopup.remove();
+  }
+  
+  // Afficher la notification actuelle
+  currentNotificationPopup = createNotificationPopup(
+    current.catName, 
+    current.catSlug, 
+    current.products
+  );
+  document.body.appendChild(currentNotificationPopup);
+  
+  // Après 3.5s, fermer et attendre 3s avant la prochaine
+  setTimeout(function() {
+    if (currentNotificationPopup && currentNotificationPopup.parentNode) {
+      currentNotificationPopup.classList.add('closing');
+      setTimeout(function() {
+        if (currentNotificationPopup && currentNotificationPopup.parentNode) {
+          currentNotificationPopup.remove();
+        }
+        // Afficher la prochaine notification après 3s
+        setTimeout(function() {
+          startNotificationCarousel(queue, currentIndex + 1);
+        }, 3000); // 3s de pause
+      }, 400); // 400ms animation
+    }
+  }, 3500); // 3.5s d'affichage
+}
+
+/**
+ * Crée un élément de notification popup
+ */
+function createNotificationPopup(categoryName, categorySlug, products) {
+  if (!products || products.length === 0) return null;
+
+  var popup = document.createElement('div');
+  popup.className = 'notification-popup';
+
+  var headerHtml = '<div class="notification-header">' +
+    '<h4><i class="fas fa-star"></i> ' + categoryName + '</h4>' +
+    '<button class="close-btn" title="Fermer">×</button>' +
+    '</div>';
+
+  var contentHtml = '<div class="notification-content">';
+  var productsToShow = products.slice(0, 5);
+  
+  productsToShow.forEach(function(prod) {
+    var image = prod.image || 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=100&q=80';
+    var price = prod.prix ? ('XAF ' + Number(prod.prix).toLocaleString('fr-FR')) : 'Prix non disponible';
+    var productLink = 'product.php?id=' + prod.id;
+    
+    contentHtml += '<a href="' + productLink + '" class="notification-item">' +
+      '<div class="notification-item-img">' +
+        '<img src="' + image + '" alt="' + prod.nom + '" loading="lazy"/>' +
+      '</div>' +
+      '<div class="notification-item-info">' +
+        '<div class="notification-item-name">' + prod.nom + '</div>' +
+        '<div class="notification-item-price">' + price + '</div>' +
+        '<div class="notification-item-cat">' + categoryName + '</div>' +
+      '</div>' +
+    '</a>';
+  });
+  
+  contentHtml += '</div>';
+
+  var footerHtml = '<div class="notification-footer">' +
+    '<a href="catalog.php">' +
+      'Voir tous les produits ' +
+      '<i class="fas fa-arrow-right"></i>' +
+    '</a>' +
+    '</div>';
+
+  popup.innerHTML = headerHtml + contentHtml + footerHtml;
+
+  // Bouton fermer
+  var closeBtn = popup.querySelector('.close-btn');
+  closeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (currentNotificationPopup === popup && popup.parentNode) {
+      popup.classList.add('closing');
+      setTimeout(function() {
+        if (popup.parentNode) popup.remove();
+      }, 400);
+    }
+  });
+
+  return popup;
+}
+
+/**
+ * Fallback: récupère les produits tendance si l'API récente échoue
+ */
+function fetchRecentProductsNotificationFallback() {
+  fetch('api/produits.php?action=tendance')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data && Array.isArray(data) && data.length > 0) {
+        // Grouper les produits en une seule catégorie "Découvrez nos tendances"
+        var products = data.slice(0, 10);
+        var notificationQueue = [{
+          catName: 'Découvrez nos tendances',
+          catSlug: 'produits',
+          products: products
+        }];
+        
+        // Démarrer le carrousel avec délai de 2s
+        setTimeout(function() {
+          startNotificationCarousel(notificationQueue, 0);
+        }, 2000);
+      }
+    })
+    .catch(function(err) {
+      console.log('Erreur récupération produits tendance:', err);
     });
 }
 
@@ -782,7 +905,7 @@ function showProductNotification(categoryName, categorySlug, products) {
   popup.innerHTML = '';
 
   var headerHtml = '<div class="notification-header">' +
-    '<h4><i class="fas fa-star"></i> Nouveaux produits</h4>' +
+    '<h4><i class="fas fa-star"></i> ' + categoryName + '</h4>' +
     '<button class="close-btn" title="Fermer">×</button>' +
     '</div>';
 
@@ -809,8 +932,8 @@ function showProductNotification(categoryName, categorySlug, products) {
   contentHtml += '</div>';
 
   var footerHtml = '<div class="notification-footer">' +
-    '<a href="catalog.php?cat=' + categorySlug + '">' +
-      'Voir toute la catégorie ' +
+    '<a href="catalog.php">' +
+      'Voir tous les produits ' +
       '<i class="fas fa-arrow-right"></i>' +
     '</a>' +
     '</div>';
@@ -909,7 +1032,7 @@ function initNotifications() {
   // Afficher le prompt initial si c'est la première visite
   showNotificationPrompt();
   
-  // Afficher les notifications in-app dès le chargement
+  // Lancer le carrousel de notifications in-app dès le chargement
   // (fonctionne indépendamment de la permission Web API)
   setTimeout(function() {
     showRecentProductsNotification();

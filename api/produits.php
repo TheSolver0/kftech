@@ -36,6 +36,35 @@ switch ($action) {
     case 'meilleurs':
         jsonResponse(apiGet('/products/meilleurs'));
 
+    case 'recent':
+        // Récupérer les produits récents par catégorie (2 par catégorie)
+        $categories = apiGet('/categories');
+        if (!is_array($categories)) {
+            jsonResponse(['produits' => [], 'message' => 'Erreur récupération catégories']);
+        }
+        
+        $allRecentProducts = [];
+        foreach ($categories as $cat) {
+            $catSlug = $cat['slug'] ?? '';
+            if (!$catSlug) continue;
+            
+            // Récupérer les 2 premiers produits de chaque catégorie
+            $products = apiGet('/products?cat=' . urlencode($catSlug) . '&limit=2');
+            if (is_array($products) && isset($products['produits'])) {
+                foreach ($products['produits'] as $product) {
+                    $product['categorie_nom'] = $cat['nom'] ?? 'Catégorie';
+                    $product['categorie_slug'] = $catSlug;
+                    $allRecentProducts[] = $product;
+                }
+            }
+        }
+        
+        // Mélanger et limiter à 10 produits maximum
+        shuffle($allRecentProducts);
+        $finalProducts = array_slice($allRecentProducts, 0, 10);
+        
+        jsonResponse(['produits' => $finalProducts]);
+
     default:
         jsonResponse(['erreur' => 'Action inconnue'], 400);
 }

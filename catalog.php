@@ -58,6 +58,45 @@ $total      = $data['total']     ?? 0;
 $totalPages = $data['pages']     ?? 1;
 $allMarques = $data['marques']   ?? [];
 
+// ---- FALLBACK : SI PAS DE PRODUITS AFFICHÉS (ERREUR API) ----
+// Si on demande le catalogue complet (pas de catégorie/recherche/promo)
+// et qu'on n'a aucun produit, récupérer TOUS les produits
+if (!$catSlug && !$q && !$marque && !$promo && !$eventId && empty($produits)) {
+    $allData = apiGet('/products?limit=500');
+    $produits = $allData['produits'] ?? $allData['items'] ?? (is_array($allData) && count($allData) > 0 ? $allData : []);
+    $total = count($produits);
+    $totalPages = ceil($total / $limit);
+    
+    // Paginer les résultats
+    if ($total > $limit) {
+        $offset = ($page - 1) * $limit;
+        $produits = array_slice($produits, $offset, $limit);
+    }
+}
+
+// ---- DEUXIÈME FALLBACK : SI TOUJOURS VIDE, RÉCUPÉRER LES PRODUITS SIMPLEMENT ----
+if (empty($produits)) {
+    $fallbackData = apiGet('/products?limit=100');
+    
+    // Essayer plusieurs clés possibles
+    if (isset($fallbackData['produits'])) {
+        $produits = $fallbackData['produits'];
+    } elseif (isset($fallbackData['items'])) {
+        $produits = $fallbackData['items'];
+    } elseif (is_array($fallbackData) && count($fallbackData) > 0 && isset($fallbackData[0])) {
+        $produits = $fallbackData;
+    }
+    
+    $total = count($produits);
+    $totalPages = ceil($total / $limit);
+    
+    // Paginer les résultats
+    if ($total > $limit) {
+        $offset = ($page - 1) * $limit;
+        $produits = array_slice($produits, $offset, $limit);
+    }
+}
+
 // ---- PAGE TITLE ----
 $eventInfo = null;
 if ($eventId > 0) {
