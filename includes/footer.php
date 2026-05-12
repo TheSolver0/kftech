@@ -16,7 +16,7 @@ if (!is_array($footerCats)) {
       </a>
       <p>Douala, Rond point Deido</p>
       <div class="f-contact">
-        <span class="ficon"><i class="fas fa-map-marker-alt"></i></span><a href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer">Douala, Rond point Deido</a> <small>(cliquer pour ouvrir Google Maps)</small>
+        <a class="footer-map-link" href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer"><span class="ficon"><i class="fas fa-map-marker-alt"></i></span><strong>Douala, Rond point Deido</strong> <small>(cliquer pour ouvrir Google Maps)</small></a>
       </div>
       <div class="f-contact">
         <span class="ficon"><i class="fas fa-phone"></i></span>+237 6 51 27 16 17

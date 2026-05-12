@@ -109,7 +109,7 @@ if (isset($_SESSION['user_id'])) {
 <div class="topbar">
   <div class="container topbar-inner">
     <div class="topbar-left">
-      <span><i class="fas fa-map-marker-alt"></i> <a href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer">Douala, Rond point Deido</a> <small>(ouvrir dans Google Maps)</small></span>
+      <span class="topbar-location"><a class="topbar-map-link" href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer"><i class="fas fa-map-marker-alt"></i> <strong>Douala, Rond point Deido</strong> <small>(ouvrir dans Google Maps)</small></a></span>
       <span><i class="fas fa-truck"></i> Suivre ma commande</span>
       <span><i class="fas fa-phone"></i>  +237 6 51 27 16 17</span>
       <span class="topbar-msg"><i class="fas fa-heart"></i> Bienvenue chez KF-Tech. Les meilleurs produits électroniques !</span>
