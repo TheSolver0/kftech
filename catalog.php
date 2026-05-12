@@ -264,6 +264,31 @@ window.KFTECH_CATEGORY_PRODUCT_IDS = <?= json_encode(array_values(array_filter(a
     <!-- SIDEBAR FILTRES -->
     <aside class="cat-sidebar-full">
 
+      <?php if ($promo || $eventInfo): ?>
+      <div class="sidebar-box">
+        <h4>Filtrer</h4>
+        <ul class="filter-cat-list">
+          <li class="filter-cat-item">
+            <a href="catalog.php" class="<?= (!$promo && $eventId === 0) ? 'active' : '' ?>">
+              <span><i class="fas fa-th-large"></i> Tous les produits</span>
+            </a>
+          </li>
+          <li class="filter-cat-item">
+            <a href="catalog.php?promo=true" class="<?= $promo ? 'active' : '' ?>">
+              <span><i class="fas fa-percent"></i> Promotions</span>
+            </a>
+          </li>
+          <?php if ($eventInfo): ?>
+          <li class="filter-cat-item">
+            <a href="catalog.php?eventId=<?= intval($eventId) ?>" class="active">
+              <span><i class="fas fa-calendar-check"></i> <?= htmlspecialchars($eventInfo['nom']) ?></span>
+            </a>
+          </li>
+          <?php endif; ?>
+        </ul>
+      </div>
+      <?php endif; ?>
+
       <!-- Catégories -->
       <div class="sidebar-box">
         <h4>Catégories</h4>
