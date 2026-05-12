@@ -113,6 +113,7 @@ else                  $pageTitle = "Catalogue - KF Tech";
 $activeCat = $catSlug;
 
 function buildUrl(array $extra = []): string {
+    global $catSlug, $q, $marque, $eventId, $promo;
     $base = array_filter([
         'cat' => $catSlug ?: null,
         'q' => $q ?: null,
@@ -382,8 +383,9 @@ window.KFTECH_CATEGORY_PRODUCT_IDS = <?= json_encode(array_values(array_filter(a
             <?php if ($disc > 0): ?>
               <span class="prod-disc">-<?= $disc ?>%</span>
             <?php endif; ?>
+            <?php $imgSrc = !empty($p['image']) ? $p['image'] : 'assets/images/logo.png'; ?>
             <div class="prod-img">
-              <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" loading="lazy"/>
+              <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Image <?= htmlspecialchars($p['nom']) ?>" loading="lazy" onerror="this.onerror=null;this.src='assets/images/logo.png'"/>
             </div>
             <div class="prod-info">
               <div class="prod-stars">

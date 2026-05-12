@@ -85,10 +85,10 @@ function guessBrand(string $name): string {
 }
 
 $specs = [
-    'Marque'    => $p['marque'] ?: (guessBrand($p['nom'] ?? '') ?: '—'),
-    'Catégorie' => $p['categorie_nom'] ?: '—',
+    'Marque'    => ($p['marque'] ?? null) ?: (guessBrand($p['nom'] ?? '') ?: '—'),
+    'Catégorie' => ($p['categorie_nom'] ?? '—'),
     'Stock'     => ($p['stock'] ?? 0) . ' unités',
-    'Badge'     => $p['badge'] ?: '—',
+    'Badge'     => ($p['badge'] ?? '—'),
     'Note'      => $avgNote . '/5',
 ];
 
@@ -110,11 +110,11 @@ if ($enPromo && $prixRemise && $p['prix'] > $prixRemise) {
 }
 
 // Prix à afficher
-$prixAffiche = $enPromo && $prixRemise ? $prixRemise : $p['prix'];
-$ancienPrix = $enPromo && $prixRemise ? $p['prix'] : ($p['ancien_prix'] ?? null);
+$prixAffiche = $enPromo && $prixRemise ? $prixRemise : ($p['prix'] ?? 0);
+$ancienPrix = $enPromo && $prixRemise ? ($p['prix'] ?? 0) : ($p['ancien_prix'] ?? null);
 
 // ---- META PAGE ----
-$pageTitle = htmlspecialchars($p['nom']) . ' - KF Tech';
+$pageTitle = htmlspecialchars($p['nom'] ?? 'Produit') . ' - KF Tech';
 $pageDesc  = substr(strip_tags($p['description'] ?? ''), 0, 160);
 $activeCat = $p['categorie_slug'] ?? '';
 
@@ -321,8 +321,8 @@ include __DIR__ . '/includes/header.php';
   <div class="breadcrumb-bar">
     <a href="index.php">Accueil</a><span>›</span>
     <a href="catalog.php">Catalogue</a><span>›</span>
-    <a href="catalog.php?cat=<?= $p['categorie_slug'] ?>"><?= htmlspecialchars($p['categorie_nom']) ?></a><span>›</span>
-    <strong><?= htmlspecialchars($p['nom']) ?></strong>
+    <a href="catalog.php?cat=<?= urlencode($p['categorie_slug'] ?? 'produits') ?>"><?= htmlspecialchars($p['categorie_nom'] ?? 'Catégorie') ?></a><span>›</span>
+    <strong><?= htmlspecialchars($p['nom'] ?? 'Produit') ?></strong>
   </div>
 </div>
 
@@ -342,12 +342,12 @@ include __DIR__ . '/includes/header.php';
               <?= htmlspecialchars($event['badge'] ?? 'PROMO') ?>
             </span>
           <?php endforeach; ?>
-        <?php elseif ($p['badge']): ?>
-          <span class="g-badge-new"><?= htmlspecialchars($p['badge']) ?></span>
+        <?php elseif (!empty($p['badge'])): ?>
+          <span class="g-badge-new"><?= htmlspecialchars($p['badge'] ?? '') ?></span>
         <?php endif; ?>
         <?php if ($disc): ?><span class="g-badge-disc">-<?= $disc ?>%</span><?php endif; ?>
       </div>
-      <img src="<?= htmlspecialchars($productImages[0] ?? $p['image']) ?>" alt="<?= htmlspecialchars($p['nom']) ?>" id="mainImg"/>
+      <img src="<?= htmlspecialchars($productImages[0] ?? $p['image'] ?? 'assets/images/logo.png') ?>" alt="Image <?= htmlspecialchars($p['nom'] ?? 'Produit') ?>" id="mainImg" onerror="this.onerror=null;this.src='assets/images/logo.png'"/>
     </div>
     <div class="gallery-thumbs">
       <?php foreach ($productImages as $i => $imgSrc): ?>
@@ -361,37 +361,37 @@ include __DIR__ . '/includes/header.php';
   <!-- INFOS -->
   <div class="pi-info">
     <div class="pi-badge-wrap">
-      <a href="catalog.php?cat=<?= $p['categorie_slug'] ?>" class="pi-cat-link">
-        <i class="<?= 'fas fa-tag'  ?>"></i> <?= htmlspecialchars($p['categorie_nom']) ?>
+      <a href="catalog.php?cat=<?= urlencode($p['categorie_slug'] ?? 'produits') ?>" class="pi-cat-link">
+        <i class="<?= 'fas fa-tag'  ?>"></i> <?= htmlspecialchars($p['categorie_nom'] ?? 'Catégorie') ?>
       </a>
     </div>
-    <h1 class="pi-name"><?= htmlspecialchars($p['nom']) ?></h1>
+    <h1 class="pi-name"><?= htmlspecialchars($p['nom'] ?? 'Produit') ?></h1>
     <div class="pi-meta">
       <span class="pi-stars-val"><?= stars($avgNote) ?></span>
       <span class="pi-reviews-cnt">(<?= count($avisList) ?> avis)</span>
-      <?php if ($p['marque']): ?>
+      <?php if (!empty($p['marque'])): ?>
         <span class="pi-brand-tag">Marque : <strong><?= htmlspecialchars($p['marque']) ?></strong></span>
       <?php endif; ?>
     </div>
     <div class="pi-prices">
-      <span class="pi-price-new">XAF <?= number_format($prixAffiche, 0, '.', ' ') ?></span>
+      <span class="pi-price-new">XAF <?= number_format($prixAffiche ?? 0, 0, '.', ' ') ?></span>
       <?php if ($ancienPrix && $ancienPrix > $prixAffiche): ?>
         <span class="pi-price-old">XAF <?= number_format($ancienPrix, 0, '.', ' ') ?></span>
       <?php endif; ?>
       <?php if ($disc): ?><span class="pi-disc-tag">-<?= $disc ?>%</span><?php endif; ?>
     </div>
     <div class="pi-stock-row">
-      <div class="stock-indicator <?= $p['stock'] > 10 ? 'stock-ok' : ($p['stock'] > 0 ? 'stock-low' : 'stock-out') ?>"></div>
-      <?php if ($p['stock'] > 10): ?>
+      <div class="stock-indicator <?= ($p['stock'] ?? 0) > 10 ? 'stock-ok' : (($p['stock'] ?? 0) > 0 ? 'stock-low' : 'stock-out') ?>"></div>
+      <?php if (($p['stock'] ?? 0) > 10): ?>
         <span>En stock : <strong style="color:#2ecc71"><?= $p['stock'] ?> unités</strong></span>
-      <?php elseif ($p['stock'] > 0): ?>
+      <?php elseif (($p['stock'] ?? 0) > 0): ?>
         <span>Stock limité : <strong style="color:#f5a623"><?= $p['stock'] ?> unités restantes</strong></span>
       <?php else: ?>
         <span style="color:#e63946"><strong>Rupture de stock</strong></span>
       <?php endif; ?>
     </div>
     <div class="pi-desc" id="productDescription">
-      <?= nl2br(htmlspecialchars($p['description'])) ?>
+      <?= nl2br(htmlspecialchars($p['description'] ?? 'Pas de description disponible.')) ?>
     </div>
     <a class="show-more-desc" id="toggleDescription" href="#">Voir plus</a>
 
@@ -417,7 +417,7 @@ include __DIR__ . '/includes/header.php';
           <i class="fas fa-shopping-cart"></i> Ajouter au panier
         </button>
         <button class="btn-wish-prod" id="wishBtn"
-                data-wish-id="<?= $p['id'] ?>"
+                data-wish-id="<?= htmlspecialchars($p['id'] ?? '') ?>"
                 title="Ajouter aux favoris">
           <i class="fas fa-heart"></i>
         </button>
@@ -428,8 +428,8 @@ include __DIR__ . '/includes/header.php';
     <div class="pi-share">
       <span>Partager :</span>
       <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode("http://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank"><i class="fab fa-facebook-f"></i></a>
-      <a href="https://twitter.com/intent/tweet?text=<?= urlencode($p['nom']) ?>&url=<?= urlencode("http://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank"><i class="fab fa-twitter"></i></a>
-      <a href="https://wa.me/?text=<?= urlencode($p['nom'].' - XAF '.number_format($p['prix'],0,'.',' ').' - '.'http://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank"><i class="fab fa-whatsapp"></i></a>
+      <a href="https://twitter.com/intent/tweet?text=<?= urlencode($p['nom'] ?? 'Produit') ?>&url=<?= urlencode("http://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank"><i class="fab fa-twitter"></i></a>
+      <a href="https://wa.me/?text=<?= urlencode(($p['nom'] ?? 'Produit').' - XAF '.number_format($p['prix'] ?? 0,0,'.',' ').' - '.'http://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank"><i class="fab fa-whatsapp"></i></a>
       <a href="#" onclick="navigator.clipboard.writeText(window.location.href);this.innerHTML='<i class=\'fas fa-check\'></i>';return false;"><i class="fas fa-link"></i></a>
     </div>
   </div>
@@ -597,9 +597,9 @@ include __DIR__ . '/includes/header.php';
 var PROD = {
   id:    <?= $p['id'] ?>,
   nom:   <?= json_encode($p['nom']) ?>,
-  prix:  <?= $p['prix'] ?>,
-  image: <?= json_encode($productImages[0] ?? $p['image']) ?>,
-  stock: <?= $p['stock'] ?>
+  prix:  <?= $p['prix'] ?? 0 ?>,
+  image: <?= json_encode($productImages[0] ?? ($p['image'] ?? 'https://via.placeholder.com/600x600?text=Produit')) ?>,
+  stock: <?= $p['stock'] ?? 0 ?>
 };
 
 // Galerie

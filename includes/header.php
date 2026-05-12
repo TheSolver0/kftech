@@ -101,11 +101,15 @@ if (isset($_SESSION['user_id'])) {
 </head>
 <body>
 
+<div id="kfPageProgress" class="kf-progress" aria-hidden="true">
+  <div class="kf-progress-bar"></div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="container topbar-inner">
     <div class="topbar-left">
-      <span><i class="fas fa-map-marker-alt"></i> Douala, Rond point Deido</span>
+      <span><i class="fas fa-map-marker-alt"></i> <a href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer">Douala, Rond point Deido</a> <small>(ouvrir dans Google Maps)</small></span>
       <span><i class="fas fa-truck"></i> Suivre ma commande</span>
       <span><i class="fas fa-phone"></i>  +237 6 51 27 16 17</span>
       <span class="topbar-msg"><i class="fas fa-heart"></i> Bienvenue chez KF-Tech. Les meilleurs produits électroniques !</span>

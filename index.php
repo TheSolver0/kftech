@@ -16,6 +16,28 @@ if (!empty($_SESSION['flash'])) {
 
 // ---- CATEGORIES (sidebar + hero) ----
 $allCats = apiGet('/categories');
+$totalProducts = 0;
+$productsCountData = apiGet('/products?limit=1');
+if (is_array($productsCountData)) {
+    if (isset($productsCountData['total'])) {
+        $totalProducts = intval($productsCountData['total']);
+    } elseif (isset($productsCountData['nbTotal']) || isset($productsCountData['count'])) {
+        $totalProducts = intval($productsCountData['nbTotal'] ?? $productsCountData['count']);
+    } elseif (isset($productsCountData['produits']) || isset($productsCountData['items'])) {
+        $items = $productsCountData['produits'] ?? $productsCountData['items'] ?? [];
+        if (is_array($items) && isset($productsCountData['pages']) && isset($productsCountData['page']) && isset($productsCountData['per_page'])) {
+            $totalProducts = intval($productsCountData['total'] ?? count($items));
+        } else {
+            $totalProducts = is_array($items) ? count($items) : 0;
+        }
+    }
+}
+if ($totalProducts === 0) {
+    $allProducts = apiGet('/products?limit=500');
+    $items = $allProducts['produits'] ?? $allProducts['items'] ?? [];
+    $totalProducts = is_array($items) ? count($items) : 0;
+}
+
 $heroSlides = [];
 if (is_array($allCats) && count($allCats)) {
     foreach ($allCats as $cat) {
@@ -278,8 +300,14 @@ setTimeout(function() {
       <aside class="cat-sidebar">
         <h3 class="sidebar-title"><span>Categorie</span></h3>
         <ul class="cat-list">
+          <li class="cat-item active" data-slug="">
+            <i class="fas fa-th-large"></i>
+            <span>Toutes les catégories</span>
+            <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= $totalProducts ?>)</span>
+            <i class="fas fa-chevron-right"></i>
+          </li>
           <?php foreach ($allCats as $i => $c): ?>
-          <li class="cat-item <?= $i===0?'active':'' ?>" data-slug="<?= htmlspecialchars($c['slug'] ?? '') ?>">
+          <li class="cat-item" data-slug="<?= htmlspecialchars($c['slug'] ?? '') ?>">
             <i class="<?= categoryIconClass($c) ?>"></i>
             <span><?= htmlspecialchars($c['nom']) ?></span>
             <span style="margin-left:auto;font-size:11px;color:#bbb">(<?= intval($c['nb_produits'] ?? 0) ?>)</span>
@@ -350,6 +378,9 @@ setTimeout(function() {
           </div>
           <?php endforeach; ?>
         </div>
+        <div class="trend-view-all" style="padding:18px 0 0; text-align:right;">
+          <a id="trendViewAll" href="catalog.php" class="more-link">Voir tous les produits</a>
+        </div>
       </div>
     </div>
   </div>
@@ -402,9 +433,10 @@ setTimeout(function() {
             <span class="prod-badge"><?= htmlspecialchars($sp['badge']) ?></span>
           <?php endif; ?>
           <?php if ($disc): ?><span class="prod-disc">-<?= $disc ?>%</span><?php endif; ?>
+          <?php $imgSrc = !empty($p['image']) ? $p['image'] : 'assets/images/logo.png'; ?>
           <div class="prod-img">
-            <img src="<?= htmlspecialchars($sp['image']) ?>" alt="<?= htmlspecialchars($sp['nom']) ?>" loading="lazy"
-                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=300&q=80'"/>
+            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Image <?= htmlspecialchars($p['nom']) ?>" loading="lazy"
+                 onerror="this.onerror=null;this.src='assets/images/logo.png'"/>
           </div>
           <div class="prod-info">
             <div class="prod-stars"><?= starsHtml($sp['note']) ?> <span>(<?= $sp['nb_avis'] ?>)</span></div>
@@ -568,7 +600,15 @@ document.querySelectorAll('.cat-item').forEach(function(item){
     var grid = document.getElementById('trendGrid');
     if (!grid) return;
     grid.innerHTML = '<p style="padding:20px;color:#aaa">Chargement...</p>';
-    fetch('api/produits.php?action=liste&cat='+encodeURIComponent(item.dataset.slug)+'&limit=8')
+    var url = 'api/produits.php?action=liste&limit=8';
+    if (item.dataset.slug) {
+      url += '&cat=' + encodeURIComponent(item.dataset.slug);
+    }
+    var viewAllLink = document.getElementById('trendViewAll');
+    if (viewAllLink) {
+      viewAllLink.href = item.dataset.slug ? 'catalog.php?cat=' + encodeURIComponent(item.dataset.slug) : 'catalog.php';
+    }
+    fetch(url)
       .then(function(r){ return r.json(); })
       .then(function(data){
         var list = data.produits || data.items || data || [];
@@ -581,7 +621,7 @@ document.querySelectorAll('.cat-item').forEach(function(item){
           var c = document.createElement('div');
           c.className = 'prod-card'; c.onclick = function(){ window.location='product.php?id='+encodeURIComponent(p.id); };
           c.innerHTML = '<span class="prod-badge">'+(p.badge||'')+'</span>'+(disc?'<span class="prod-disc">-'+disc+'%</span>':'')+
-            '<div class="prod-img"><img src="'+(p.image||'')+'" alt="'+(p.nom||'Produit')+'" loading="lazy" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=300&q=80\'"/></div>'+
+            '<div class="prod-img"><img src="'+(p.image ? p.image : 'assets/images/logo.png')+'" alt="Image '+(p.nom||'Produit')+'" loading="lazy" onerror="this.onerror=null;this.src=\'assets/images/logo.png\'"/></div>'+
             '<div class="prod-info"><p class="prod-name">'+(p.nom||'Produit KF Tech')+'</p>'+ 
             '<div class="prod-prices"><span class="prod-price-new">XAF '+parseInt(p.prix||0).toLocaleString('fr-FR')+'</span>'+(p.ancien_prix?'<span class="prod-price-old">XAF '+parseInt(p.ancien_prix).toLocaleString('fr-FR')+'</span>':'')+'</div>'+ 
             '<p class="prod-avail">Stock : <strong>'+((p.stock !== undefined) ? p.stock : '0')+'</strong></p>'+ 

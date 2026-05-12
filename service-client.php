@@ -17,6 +17,10 @@ include __DIR__ . '/includes/header.php';
         <p>Appelez-nous au <strong>+237 6 51 27 16 17</strong> ou envoyez un message WhatsApp pour une réponse immédiate.</p>
       </div>
       <div style="padding:24px;border:1px solid var(--border);border-radius:12px;background:#fff;">
+        <h2>Nous localiser</h2>
+        <p>Retrouvez-nous à <strong>Douala, Rond point Deido</strong>. <a href="https://maps.app.goo.gl/eaqJJ6tJ5ijVFDZd7?g_st=aw" target="_blank" rel="noopener noreferrer">Cliquez ici pour ouvrir Google Maps et démarrer votre itinéraire</a>.</p>
+      </div>
+      <div style="padding:24px;border:1px solid var(--border);border-radius:12px;background:#fff;">
         <h2>Assistance par email</h2>
         <p>Écrivez-nous à <a href="mailto:contact@kftech237.com">contact@kftech237.com</a> pour toute demande commerciale, garantie ou suivi de commande.</p>
       </div>

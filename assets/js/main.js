@@ -707,7 +707,9 @@ function createNotificationPopup(categoryName, categorySlug, products) {
   productsToShow.forEach(function(prod) {
     var image = prod.image || 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=100&q=80';
     var price = prod.prix ? ('XAF ' + Number(prod.prix).toLocaleString('fr-FR')) : 'Prix non disponible';
-    var productLink = 'product.php?id=' + prod.id;
+    var productId = prod.id || prod.product_id || prod.pid;
+    var productLink = 'product.php?id=' + productId;
+    console.log('Notification Product:', { nom: prod.nom, id: prod.id, product_id: prod.product_id, pid: prod.pid, productId: productId, link: productLink });
     
     contentHtml += '<a href="' + productLink + '" class="notification-item">' +
       '<div class="notification-item-img">' +
@@ -1380,3 +1382,153 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+(function() {
+  var progressRoot;
+  var progressBar;
+  var progressTimer;
+  var currentProgress = 0;
+  var activeFetches = 0;
+  var navigationStarted = false;
+
+  function getElements() {
+    if (!progressRoot) {
+      progressRoot = document.getElementById('kfPageProgress');
+      progressBar = progressRoot ? progressRoot.querySelector('.kf-progress-bar') : null;
+    }
+  }
+
+  function showProgress() {
+    getElements();
+    if (!progressRoot || !progressBar) return;
+    progressRoot.style.opacity = '1';
+    progressRoot.style.pointerEvents = 'none';
+    progressBar.style.transformOrigin = 'left center';
+    if (currentProgress === 0) {
+      progressBar.style.transform = 'scaleX(0.03)';
+    }
+  }
+
+  function hideProgress() {
+    getElements();
+    if (!progressRoot || !progressBar) return;
+    progressBar.style.transform = 'scaleX(0)';
+    currentProgress = 0;
+    setTimeout(function() {
+      if (progressRoot) progressRoot.style.opacity = '0';
+    }, 250);
+  }
+
+  function setProgress(value) {
+    getElements();
+    if (!progressBar) return;
+    currentProgress = Math.max(0, Math.min(100, value));
+    progressBar.style.transform = 'scaleX(' + (currentProgress / 100) + ')';
+  }
+
+  function advance() {
+    if (currentProgress >= 90) return;
+    var next = currentProgress + (Math.random() * 8 + 6);
+    if (currentProgress < 60) {
+      next = currentProgress + (Math.random() * 15 + 10);
+    } else if (currentProgress < 85) {
+      next = currentProgress + (Math.random() * 6 + 4);
+    }
+    setProgress(next);
+    progressTimer = setTimeout(advance, Math.random() * 400 + 300);
+  }
+
+  function startProgress() {
+    if (navigationStarted) return;
+    navigationStarted = true;
+    clearTimeout(progressTimer);
+    showProgress();
+    setProgress(5);
+    progressTimer = setTimeout(advance, 300);
+  }
+
+  function completeProgress() {
+    clearTimeout(progressTimer);
+    setProgress(100);
+    setTimeout(function() {
+      hideProgress();
+      navigationStarted = false;
+    }, 300);
+  }
+
+  function maybeStartNavigationProgress(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var link = event.target.closest('a');
+    if (!link || !link.href) return;
+    if (link.target && link.target !== '_self') return;
+    if (link.hasAttribute('download')) return;
+    var href = link.getAttribute('href');
+    if (!href || href.trim() === '' || href.trim().charAt(0) === '#') return;
+    if (href.indexOf('#') !== -1 && link.href.split('#')[0] === location.href.split('#')[0]) return;
+    try {
+      var url = new URL(link.href, location.href);
+      if (url.origin !== location.origin) return;
+    } catch (e) {
+      return;
+    }
+    event.preventDefault();
+    startProgress();
+    // Forcer un rendu de la barre avant la navigation
+    if (progressRoot) {
+      void progressRoot.offsetHeight;
+    }
+    window.requestAnimationFrame(function() {
+      window.location.href = link.href;
+    });
+  }
+
+  function wrapFetch() {
+    if (!window.fetch) return;
+    var originalFetch = window.fetch.bind(window);
+    window.fetch = function() {
+      if (arguments.length) {
+        activeFetches++;
+        if (activeFetches === 1) {
+          startProgress();
+        }
+      }
+      return originalFetch.apply(window, arguments).then(function(response) {
+        activeFetches = Math.max(0, activeFetches - 1);
+        if (activeFetches === 0) {
+          completeProgress();
+        }
+        return response;
+      }).catch(function(error) {
+        activeFetches = Math.max(0, activeFetches - 1);
+        if (activeFetches === 0) {
+          completeProgress();
+        }
+        throw error;
+      });
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    wrapFetch();
+    document.addEventListener('click', maybeStartNavigationProgress, true);
+    document.addEventListener('submit', function() {
+      startProgress();
+    }, true);
+  });
+
+  window.addEventListener('beforeunload', function() {
+    if (!navigationStarted) {
+      startProgress();
+    }
+  });
+
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      completeProgress();
+    }
+  });
+
+  window.addEventListener('load', function() {
+    completeProgress();
+  });
+})();

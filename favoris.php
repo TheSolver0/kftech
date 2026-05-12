@@ -161,10 +161,10 @@ include __DIR__ . '/includes/header.php';
         <?php endif; ?>
 
         <div class="fav-img">
-          <img src="<?= htmlspecialchars($p['image'] ?? '') ?>"
-               alt="<?= htmlspecialchars($p['nom'] ?? '') ?>"
+          <img src="<?= htmlspecialchars(!empty($p['image']) ? $p['image'] : 'assets/images/logo.png') ?>"
+               alt="Image <?= htmlspecialchars($p['nom'] ?? '') ?>"
                loading="lazy"
-               onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect fill=%22%23f5f5f5%22 width=%22200%22 height=%22150%22/></svg>'"/>
+               onerror="this.onerror=null;this.src='assets/images/logo.png'"/>
         </div>
         <div class="fav-info">
           <p class="fav-cat"><?= htmlspecialchars($p['categorie_nom'] ?? $p['cat_nom'] ?? $p['categorie'] ?? '') ?></p>

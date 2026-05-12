@@ -25,6 +25,12 @@ function apiGet(string $path): array {
     
     $result = is_array($decoded) ? $decoded : [];
 
+    // Si c'est un seul produit (pas une liste), retourner directement
+    // Les seuls produits ont une clé 'id' au premier niveau et pas de 'produits'/'items'
+    if (isset($result['id']) && !isset($result['produits']) && !isset($result['items'])) {
+        return $result;
+    }
+
     // Workaround for API category filter bugs when category filters return zero results
     if (strpos($path, 'products') !== false) {
         parse_str(parse_url(APIURL . '/' . ltrim($path, '/'), PHP_URL_QUERY), $query);
