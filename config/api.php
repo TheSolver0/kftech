@@ -163,7 +163,7 @@ function categoryIconClass(array $cat): string {
  * @return array Liste des événements
  */
 function apiGetEvents(): array {
-    return apiGet('/ecom/events');
+    return apiGet('/events');
 }
 
 /**
@@ -197,5 +197,5 @@ function apiGetProductsWithPromo(array $filters = []): array {
         $params['eventId'] = $filters['eventId'];
     }
     $qs = $params ? '?' . http_build_query($params) : '';
-    return apiGet('/ecom/products' . $qs);
+    return apiGet('/products' . $qs);
 }
