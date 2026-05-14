@@ -1,6 +1,8 @@
 <?php
 
 define('APIURL', "https://api.kftech237.com/api/ecom");
+// Remplacez G-XXXXXXXXXX par votre ID Google Analytics (GA4)
+define('GA_MEASUREMENT_ID', 'G-XXXXXXXXXX');
 
 function apiGet(string $path): array {
     $url = APIURL . '/' . ltrim($path, '/');

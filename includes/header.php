@@ -40,6 +40,17 @@ if (isset($_SESSION['user_id'])) {
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"/>
   <meta name="theme-color" content="#FF6B35"/>
   <title><?= htmlspecialchars($pageTitle) ?></title>
+  <?php if (defined('GA_MEASUREMENT_ID') && GA_MEASUREMENT_ID !== 'G-XXXXXXXXXX'): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_MEASUREMENT_ID ?>"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '<?= GA_MEASUREMENT_ID ?>', { 'anonymize_ip': true });
+    </script>
+  <?php else: ?>
+    <!-- Google Analytics désactivé : remplacez GA_MEASUREMENT_ID dans config/api.php par votre ID GA4 -->
+  <?php endif; ?>
   
   <!-- Favicon pour Google et navigateurs -->
   <link rel="icon" type="image/png" href="assets/images/logo.png" />

@@ -1598,6 +1598,7 @@ img { max-width: 100%; display: block; }
 
 @media (max-width: 480px) {
   .topbar { display: none; }
+  .notification-popup { display: none !important; }
   .logo-img { height: 28px; }
   .logo-kf, .logo-tech { font-size: 22px; }
   .hero-title { font-size: 28px; }
